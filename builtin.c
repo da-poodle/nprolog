@@ -325,21 +325,20 @@ int b_ask(int arglist, int rest){
             x2 = cdr(x2);
         }
 
+	putchar(' ');
+
         fflush(stdout);
         fflush(stdin);
 
-        loop:
-        c = getchar();
+        loop:	
+        c = getch();
         
-        if(c == '.'){
-        	getchar();
+        if(c == '.' || c == EOL){
+	    fputs(".\n", stdout);           	
             return(YES);
         }
-        else if(c == EOL){
-            return(YES);
-        }
-        else if(c == ';'){
-        	getchar();
+        else if(c == ';' || c == ' '){
+	    fputs(";\n", stdout);	    
             return(NO);
         }
         else
