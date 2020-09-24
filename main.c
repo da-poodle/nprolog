@@ -520,8 +520,6 @@ int after_cut(int x){
     
 }
 
-#define FLUSH __fpurge(stdin);
-
 void debugger(int goal, int bindings, int rest, int n){
     int c,save;
 
@@ -928,7 +926,7 @@ void print_not_quoted(int addr){
                 printf("\a");
                 #elif __OpenBSD__
                 printf("\a");
-                #endif
+                #endif 
             else if(c == 'b')
                 fprintf(GET_PORT(output_stream),"%c",BS);
             else if(c == NUL)

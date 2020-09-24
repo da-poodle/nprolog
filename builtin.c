@@ -6,9 +6,6 @@
 #include <sys/stat.h>
 #include "npl.h"
 
-#define FLUSH __fpurge(stdin);
-
-
 void initbuiltin(void){
     definfix(">",b_greater,700,XFX);
     definfix("<",b_smaller,700,XFX);
@@ -2889,7 +2886,12 @@ int b_make_directory(int arglist, int rest){
             error(INSTANTATION_ERR,"make_directory ",arg1);
         if(!atomp(arg1))
             error(NOT_ATOM,"make_directory ", arg1);
-        mkdir(GET_NAME(arg1),0777);
+
+        #ifdef IS_WINDOWS
+            mkdir(GET_NAME(arg1));
+        #else   
+            mkdir(GET_NAME(arg1),0777);
+        #endif
         return(YES);
     }
     return(NO);

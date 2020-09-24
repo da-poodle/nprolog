@@ -3,8 +3,6 @@
 #include <float.h>
 #include "npl.h"
 
-#define FLUSH __fpurge(stdin);
-
 void defoperator(char *name, int(*func)(int, int), int weight, int spec ,int opt){
     int atom,old_weight,old_spec,new_weight,new_spec,ex_spec;
 
