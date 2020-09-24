@@ -2,6 +2,8 @@
 written by kenichi sasagawa 2016/9~
 */
 #include <setjmp.h>
+#include <stdio.h>
+
 #define CELLSIZE 10000000
 #define HEAPSIZE  7000000
 #define FREESIZE      500
