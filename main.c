@@ -2,14 +2,12 @@
 written by kenichi sasagawa 2016/8~
 */
 
-#include <stdio.h>
 #include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
-#include <setjmp.h>
 #include <math.h>
-#include <stdio_ext.h>
 #include <signal.h>
+#ifdef __linux
+  #include <stdio_ext.h>
+#endif
 #include "npl.h"
 
 //global vers
