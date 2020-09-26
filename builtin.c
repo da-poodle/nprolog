@@ -325,7 +325,7 @@ int b_ask(int arglist, int rest){
             x2 = cdr(x2);
         }
 
-	putchar(' ');
+        putchar(' ');
 
         fflush(stdout);
         fflush(stdin);
@@ -334,11 +334,11 @@ int b_ask(int arglist, int rest){
         c = getch();
         
         if(c == '.' || c == EOL){
-	    fputs(".\n", stdout);           	
+            fputs(".\n", stdout);           	
             return(YES);
         }
         else if(c == ';' || c == ' '){
-	    fputs(";\n", stdout);	    
+            fputs(";\n", stdout);	    
             return(NO);
         }
         else
