@@ -162,8 +162,8 @@ int b_length(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(integerp(eval(arg2)) && GET_INT(eval(arg2)) < 0)
             error(NOT_LESS_THAN_ZERO,"length ",arg2);
@@ -204,9 +204,9 @@ int b_op(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));   //priority
-        arg2 = deref(cadr(arglist));  //specifier
-        arg3 = deref(caddr(arglist)); //operator
+        arg1 = car(arglist);   //priority
+        arg2 = cadr(arglist);  //specifier
+        arg3 = caddr(arglist); //operator
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"op ",arg1);
@@ -430,13 +430,13 @@ int b_write_canonical(int arglist, int rest){
     n = length(arglist);
     if(n == 1){
         arg1 = output_stream;
-        arg2 = deref(car(arglist));
+        arg2 = car(arglist);
         goto write_canonical;
 
     }
     else if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         write_canonical:
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"write_canonical ",arg1);
@@ -470,8 +470,8 @@ int b_writeq(int arglist, int rest){
 
     }
     else if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         writeq:
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"writeq ",arg1);
@@ -503,7 +503,7 @@ int b_nl(int arglist, int rest){
         return(YES);
     }
     else if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         save = output_stream;
         if(aliasp(arg1))
@@ -554,7 +554,7 @@ int b_get(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         loop:
         c = getc(GET_PORT(input_stream));
@@ -582,12 +582,12 @@ int b_get_code(int arglist, int rest){
     n = length(arglist);
     if(n == 1){
         arg1 = input_stream;
-        arg2 = deref(car(arglist));
+        arg2 = car(arglist);
         goto get_code;
     }
     else if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         get_code:
         if(wide_variable_p(arg1))
@@ -665,12 +665,12 @@ int b_get_byte(int arglist, int rest){
     n = length(arglist);
     if(n == 1){
         arg1 = input_stream;
-        arg2 = deref(car(arglist));
+        arg2 = car(arglist);
         goto get_byte;
     }
     else if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         get_byte:
         if(wide_variable_p(arg1))
@@ -696,7 +696,7 @@ int b_tab(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(integerp(eval(arg1)) && GET_INT(eval(arg1)) < 0)
             error(NOT_LESS_THAN_ZERO,"tab",arg1);
         if(!integerp(arg1))
@@ -743,13 +743,13 @@ int b_read(int arglist, int rest){
     n = length(arglist);
     if(n == 1){
         arg1 = input_stream;
-        arg2 = deref(car(arglist));
+        arg2 = car(arglist);
         goto read;
 
     }
     else if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         read:
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"read ",arg1);
@@ -791,7 +791,7 @@ int b_see(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"see ",arg1);
         if(!atomp(arg1))
@@ -843,7 +843,7 @@ int b_tell(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"tell ",arg1);
         if(!atomp(arg1))
@@ -899,7 +899,7 @@ int b_flush_output(int arglist, int rest){
         return(YES);
     }
     else if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"flush_output ",arg1);
         if(!streamp(arg1) && !aliasp(arg1))
@@ -922,7 +922,7 @@ int b_consult(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"consult ",arg1);
         if(!atomp(arg1))
@@ -985,7 +985,7 @@ int b_reconsult(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"reconsult ",arg1);
         if(!atomp(arg1))
@@ -1113,8 +1113,8 @@ int b_greater(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"> ",arg1);
@@ -1142,8 +1142,8 @@ int b_smaller(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"< ",arg1);
@@ -1170,8 +1170,8 @@ int b_eqsmaller(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"=< ",arg1);
         if(wide_variable_p(arg2))
@@ -1196,8 +1196,8 @@ int b_eqgreater(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,">= ",arg1);
@@ -1263,8 +1263,8 @@ int b_equalp(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(anoymousp(arg1) && anoymousp(arg2))
             return(NO);
@@ -1281,8 +1281,8 @@ int b_notequalp(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(anoymousp(arg1) && anoymousp(arg2))
             return(YES);
@@ -1299,9 +1299,9 @@ int b_compare(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
         if(!wide_variable_p(arg1) && !atomp(arg1))
             error(NOT_ATOM,"compare ",arg1);
         if(!wide_variable_p(arg1) &&
@@ -1326,8 +1326,8 @@ int b_atsmaller(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(atsmaller(arg1,arg2))
             return(YES);
@@ -1428,8 +1428,8 @@ int b_ateqsmaller(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(ateqsmaller(arg1,arg2))
             return(YES);
@@ -1447,8 +1447,8 @@ int b_atgreater(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(!ateqsmaller(arg1,arg2))
             return(YES);
@@ -1465,8 +1465,8 @@ int b_ateqgreater(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(!atsmaller(arg1,arg2))
             return(YES);
@@ -1494,7 +1494,7 @@ int b_call(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"call ",arg1);
@@ -1517,7 +1517,7 @@ int b_not(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"not ",arg1);
         if(!callablep(arg1))
@@ -1549,7 +1549,7 @@ int b_assert(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"assertz",arg1);
         if(singlep(arg1)){
@@ -1589,7 +1589,7 @@ int b_asserta(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"asserta",arg1);
         if(singlep(arg1)){
@@ -1632,7 +1632,7 @@ int b_retract(int arglist, int rest){
     clause = clauses = head = NIL;
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"retract ",arg1);
         if(operationp(arg1) && !predicatep(cadr(arg1)))
@@ -1696,7 +1696,7 @@ int b_abolish(int arglist, int rest){
     clause = clauses = NIL;
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"abolish ",arg1);
@@ -1802,8 +1802,8 @@ int b_atom_codes(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         if(wide_variable_p(arg1) && listp(arg2) && length(arg2) == -1)
             error(INSTANTATION_ERR,"atom_codes ",arg1);
         if(!wide_variable_p(arg1) && !atomp(arg1))
@@ -1908,9 +1908,9 @@ int b_atom_concat(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));;
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
         
         if(!wide_variable_p(arg1) && !atomp(arg1))
             error(NOT_STR,"atom_concat ",arg1);
@@ -1939,9 +1939,9 @@ int b_concat(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));;
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
         
         if(!wide_variable_p(arg1) && !(atomp(arg1) || stringp(arg1)))
             error(NOT_STR,"concat ",arg1);
@@ -1966,8 +1966,8 @@ int b_string_length(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"string_length ",arg1);
         if(!stringp(arg1))
@@ -1989,10 +1989,10 @@ int b_substring(int arglist, int rest){
 
     n = length(arglist);
     if(n == 4){
-        arg1 = deref(car(arglist));   //instring
-        arg2 = deref(cadr(arglist));  //start
-        arg3 = deref(caddr(arglist)); //length
-        arg4 = deref(cadddr(arglist));//outstring
+        arg1 = car(arglist);   //instring
+        arg2 = cadr(arglist);  //start
+        arg3 = caddr(arglist); //length
+        arg4 = cadddr(arglist);//outstring
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"substring ",arg1);
@@ -2048,8 +2048,8 @@ int b_ifthen(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
         save1 = sp;
         if(variablep(arg1))
             error(INSTANTATION_ERR,"ifthen ",arg1);
@@ -2075,9 +2075,9 @@ int b_ifthenelse(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
         
         if(variablep(arg1))
             error(INSTANTATION_ERR,"ifthenelse ",arg1);
@@ -2163,7 +2163,7 @@ int b_spy(int arglist, int rest){
         return(YES);
     }
     else if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         arg1 = copy_heap(arg1);
     
         if(!memberp(arg1,spy_list))
@@ -2184,7 +2184,7 @@ int b_nospy(int arglist, int rest){
         return(YES);
     }
     else if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         arg1 = copy_heap(arg1);
         spy_list = listremove(arg1,spy_list);
         return(YES);
@@ -2279,7 +2279,7 @@ int b_atom(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(atomp(arg1))
             return(YES);
@@ -2294,7 +2294,7 @@ int b_integer(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(integerp(arg1) || longnump(arg1) || bignump(arg1))
             return(YES);
         else
@@ -2308,7 +2308,7 @@ int b_real(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(floatp(arg1))
             return(YES);
         else
@@ -2322,7 +2322,7 @@ int b_number(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(numberp(arg1))
             return(YES);
         else
@@ -2337,7 +2337,7 @@ int b_compound(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(compoundp(arg1))
             return(YES);
         else
@@ -2351,7 +2351,7 @@ int b_ground(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(groundp(arg1))
             return(YES);
@@ -2366,7 +2366,7 @@ int b_system(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(builtinp(arg1))
             return(YES);
@@ -2381,7 +2381,7 @@ int b_var(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(variablep(arg1))
             return(YES);
         else if(anoymousp(arg1))
@@ -2397,7 +2397,7 @@ int b_nonvar(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(variablep(arg1))
             return(NO);
@@ -2414,7 +2414,7 @@ int b_atomic(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(atomicp(arg1))
             return(YES);
@@ -2429,7 +2429,7 @@ int b_list(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(listp(arg1))
             return(YES);
         else
@@ -2443,7 +2443,7 @@ int b_string(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
 
         if(stringp(arg1))
             return(YES);
@@ -2461,9 +2461,9 @@ int b_functor(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
 
         // to avoid compier bug {}
         if(structurep(arg2) && car(arg2) == CURL && length(arg2) == 1)
@@ -2554,9 +2554,9 @@ int b_arg(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"arg ", arg1);
@@ -2585,9 +2585,9 @@ int b_arg0(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
 
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"arg ", arg1);
@@ -2634,7 +2634,7 @@ int b_listing(int arglist, int rest){
         return(YES);
     }
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(atomp(arg1)){
             clauses = GET_CAR(arg1);
             listing_flag = 1;
@@ -2676,8 +2676,8 @@ int b_univ(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(variablep(arg1) && variablep(arg2))
             error(INSTANTATION_ERR,"=.. ",list2(arg1,arg2));
@@ -2739,7 +2739,7 @@ int b_current_predicate(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         predlist = reverse(predicates);
         save1 = wp;
         save2 = sp;
@@ -2771,9 +2771,9 @@ int b_current_op(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
 
         /*
         e.g. ',' ':-'  aux of operator is SIMP
@@ -2880,7 +2880,7 @@ int b_make_directory(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"make_directory ",arg1);
         if(!atomp(arg1))
@@ -2902,7 +2902,7 @@ int b_change_directory(int arglist , int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"change_directory ",arg1);
         if(!atomp(arg1))
@@ -2921,7 +2921,7 @@ int b_delete(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"delete ",arg1);
         if(!atomp(arg1))
@@ -2964,7 +2964,7 @@ int b_shell(int arglist, int rest){
 
     n = length(arglist);
     if(n == 1){
-        arg1 = deref(car(arglist));
+        arg1 = car(arglist);
         if(!singlep(arg1))
             error(NOT_ATOM,"shell",arg1);
 
@@ -2984,8 +2984,8 @@ int b_sort(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         return(unify(arg2,sort(arg1)));
     }
@@ -2997,8 +2997,8 @@ int b_keysort(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         return(unify(arg2,keysort(arg1)));
     }
@@ -3011,8 +3011,8 @@ int b_member(int arglist, int rest){
     save2 = sp;
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
 
         save1 = wp;
@@ -3051,9 +3051,9 @@ int b_append(int arglist, int rest){
     body = NIL;
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
-        arg3 = deref(caddr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
 
         save1 = wp;
         if(unify(arg1,NIL) == YES && unify(arg2,arg3) == YES){
@@ -3088,8 +3088,8 @@ int b_reverse(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(!variablep(arg1) && variablep(arg2))
             return(unify(listreverse(arg1),arg2));
@@ -3111,9 +3111,9 @@ int b_between(int arglist, int rest){
 
     n = length(arglist);
     if(n == 3){
-        arg1 = deref(car(arglist));   //low
-        arg2 = deref(cadr(arglist));  //high
-        arg3 = deref(caddr(arglist)); //variable
+        arg1 = car(arglist);   //low
+        arg2 = cadr(arglist);  //high
+        arg3 = caddr(arglist); //variable
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"between ",arg1);
         if(wide_variable_p(arg2))
@@ -3165,8 +3165,8 @@ int b_inc(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(wide_variable_p(arg1) && wide_variable_p(arg2))
             error(INSTANTATION_ERR,"inc ", list2(arg1,arg2));
@@ -3199,8 +3199,8 @@ int b_dec(int arglist, int rest){
 
     n = length(arglist);
     if(n == 2){
-        arg1 = deref(car(arglist));
-        arg2 = deref(cadr(arglist));
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
 
         if(wide_variable_p(arg1) && wide_variable_p(arg2))
             error(INSTANTATION_ERR,"dec ", list2(arg1,arg2));
