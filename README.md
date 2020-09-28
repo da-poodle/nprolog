@@ -110,6 +110,7 @@ break/0
 call/1
 chdir/1
 clause/2
+close/1
 compare/3
 concat/3
 consult/1
@@ -121,11 +122,17 @@ dec/2
 delete/1
 display/1
 edit/1
+eq/2
 expand_term/2
 fail/0
 float/1
 flush/0 
 gc/0
+get/1
+get/2
+get0/1
+get0/2
+get0_noecho/1
 halt/0
 ifthen/2
 ifthenelse/3
@@ -145,8 +152,10 @@ nospy/1
 notrace/0
 number/1
 not/1
+open/3
 read/1
 reconsult/1
+rmdir/1
 see/1
 seeing/1
 seen/0

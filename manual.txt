@@ -120,6 +120,9 @@ B = (write(v_1));
 no
 ?- 
 
+□ close(Handle)
+Handleで指定したファイルをクローズする。
+
 □ current_op(Proc,Assoc,Op)
 バックトラックしつつデータベース中に現在定義されている演算子定数を戻す。
 
@@ -145,6 +148,9 @@ no
 Filenameで指定したファイルのエディトのため、インタープリタからエディタに切り換える。
 エディタとしてnanoを呼び出す。nanoを終了するとファイルの内容はインタプリタに読み込まれる。
 
+□ eq(X,Y)
+XとYが同じデータオブジェクトであり、かつ同じアドレスにストアされているかを調べる。
+
 □ expand_term(Term,Newterm)
 DCG：限定節文法の項を等価なProlog項に変換する。
 
@@ -168,6 +174,9 @@ ASCII値をCharとユニフィケーションする。
 非印刷文字をスキップしながら、標準入力装置から次の文字を読み、
 ASCII値をCharとユニフィケーションする。get0は非印刷文字をスキップしない。
 
+□ get0_noecho(Char)
+標準入力装置から次の文字を読み込み、ASCII値をCharにユニフィーケーションする。
+get0_noechoは標準出力装置にその文字を表示しない。
 
 □ halt
 インタープリタから抜け出す。
@@ -196,6 +205,22 @@ Eを評価し、その値をXにユニフィケーションする
 
 □ name(Atom,List)
 リストをアトムに変換するか、アトムまたは整数をリストに変換する。
+
+□ open(Handle,Filename,Access)
+既存のファイルをオープンする。
+
+Accessは次のいずれか
+r read
+w write
+rw read and write
+a append
+ra read and append
+
+□ rename(Filename,Newname)
+ファイル名を変更する。
+
+□ rmdir(Path)
+ディレクトリを削除する。
 
 □ substring(InString,N,Length,OutString)
 ストリングからサブストリングを抽出する。

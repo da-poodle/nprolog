@@ -437,59 +437,55 @@ extern int wp; //working pointer
 #define ILLEGAL_OPL_INPUT   17
 #define UNCAUGHT_EXCEPTION       19
 #define CANT_OPEN       20
-#define ILLEGAL_ARGS    21
-#define NOT_CONS        22
-#define CANT_MODIFY     23
-#define NOT_INT         24
-#define NOT_STREAM      25
-#define NOT_OUT_STREAM  26
-#define NOT_IN_STREAM   27
-#define NOT_CHAR        28
-#define NOT_FLT         29
-#define CTRL_OVERF      30
-#define END_STREAM      31
-#define DIV_ZERO        32
-#define CANT_PARSE      33
-#define NOT_ARITHMETIC  34
+#define FILE_EXIST      21
+#define ILLEGAL_ARGS    22
+#define NOT_CONS        23
+#define CANT_MODIFY     24
+#define NOT_INT         25
+#define NOT_STREAM      26
+#define NOT_OUT_STREAM  27
+#define NOT_IN_STREAM   28
+#define NOT_CHAR        29
+#define NOT_FLT         30
+#define CTRL_OVERF      31
+#define END_STREAM      32
+#define DIV_ZERO        33
+#define CANT_PARSE      34
+#define NOT_ARITHMETIC  35
 #define FLT_OVERF       36
-#define FLT_UNDERF      38
-#define STACK_OVERF     41
-#define TRAIL_OVERF     42
-#define SYSTEM_ERROR    44
-#define TCPIP           45
-#define UNDEF_PRED		46
-#define DISCONTIGUOUS   47
-#define NOT_EXIST_MODULE 48
-#define EOF_ERROR       49
-#define INSTANTATION_ERR    50
-#define EXPONENT_ERR    51
-#define OPE_SPEC_ERR    52
-#define NOT_CALLABLE    53
-#define NOT_VAR         54
-#define EXISTENCE_ERR   55
-#define NOT_SOURCE      56
-#define ALIAS_EXIST     57
-#define NOT_IO_MODE     59
-#define NOT_CLOSE_OPTION    60
-#define NOT_STREAM_OPTION   61
-#define NOT_OUTPUT_STREAM   62
-#define NOT_ATOMIC          63
-#define NOT_LESS_THAN_ZERO  64
-#define NOT_COMPOUND        65
-#define NON_EMPTY_LIST      66
-#define NOT_INPUT_STREAM    67
-#define PAST_EOF_INPUT      68
-#define EVALUATION_ERR      69
-#define STATIC_PROCEDURE    70
-#define PRED_INDICATOR      71
-#define NOT_WRITE_OPTION    72
-#define OPE_PRIORITY_ERR    73
-#define MODIFY_OPE_ERR      74
-#define NOT_READ_OPTION     75
-#define NOT_CHAR_CODE       76
-#define NOT_FLAG_SPEC       77
-#define RESOURCE_ERR        78
-#define NOT_ORDER           79
+#define FLT_UNDERF      37
+#define STACK_OVERF     38
+#define SYSTEM_ERROR    39
+#define UNDEF_PRED		40
+#define EOF_ERROR       41
+#define INSTANTATION_ERR    42
+#define EXPONENT_ERR    43
+#define OPE_SPEC_ERR    44
+#define NOT_CALLABLE    45
+#define NOT_VAR         46
+#define EXISTENCE_ERR   47
+#define NOT_SOURCE      48
+#define ALIAS_EXIST     49
+#define NOT_IO_MODE     50
+#define NOT_CLOSE_OPTION    51   
+#define NOT_STREAM_OPTION   52
+#define NOT_OUTPUT_STREAM   53
+#define NOT_ATOMIC          54
+#define NOT_LESS_THAN_ZERO  55
+#define NOT_COMPOUND        56
+#define NON_EMPTY_LIST      57
+#define NOT_INPUT_STREAM    58
+#define PAST_EOF_INPUT      59
+#define EVALUATION_ERR      60
+#define STATIC_PROCEDURE    61
+#define PRED_INDICATOR      62
+#define NOT_OPEN_OPTION     63
+#define OPE_PRIORITY_ERR    64
+#define MODIFY_OPE_ERR      65
+#define NOT_CHAR_CODE       66
+#define RESOURCE_ERR        67
+#define NOT_ORDER           68
+
 
 double getETime(void);
 int readc(void);
@@ -562,7 +558,7 @@ int b_between(int arglist, int rest);
 int b_bignum(int arglist, int rest);
 int b_break(int arglist, int rest);
 int b_call(int arglist, int rest);
-int b_change_directory(int arglist , int rest);
+int b_chdir(int arglist , int rest);
 int b_char_code(int arglist, int rest);
 int b_char_conversion(int arglist, int rest);
 int b_char_set(int arglist, int rest);
@@ -578,6 +574,7 @@ int b_concat(int arglist, int rest);
 int b_consult(int arglist, int rest);
 int b_constant(int arglist, int rest);
 int b_copy_term(int arglist, int rest);
+int b_create(int arglist, int rest);
 int b_current_directory(int arglist , int rest);
 int b_current_input(int arglist, int rest);
 int b_current_output(int arglist, int rest);
@@ -591,6 +588,7 @@ int b_debug(int arglist, int rest);
 int b_defined_predicate(int arglist, int rest);
 int b_defined_userop(int arglist, int rest);
 int b_delete(int arglist, int rest);
+int b_eq(int arglist, int rest);
 int b_eqgreater(int arglist, int rest);
 int b_eqsmaller(int arglist, int rest);
 int b_equalp(int arglist, int rest);
@@ -604,6 +602,7 @@ int b_generate_all_variable(int arglist, int rest);
 int b_generate_variable(int arglist, int rest);
 int b_get(int arglist, int rest);
 int b_get0(int arglist, int rest);
+int b_get0_noecho(int arglist, int rest);
 int b_get_byte(int arglist, int rest);
 int b_get_char(int arglist, int rest);
 int b_get_code(int arglist, int rest);
@@ -621,7 +620,7 @@ int b_length(int arglist, int rest);
 int b_list(int arglist, int rest);
 int b_listing(int arglist, int rest);
 int b_longnum(int arglist, int rest);
-int b_make_directory(int arglist, int rest);
+int b_mkdir(int arglist, int rest);
 int b_member(int arglist, int rest);
 int b_measure(int arglist, int rest);
 int b_nano(int arglist, int rest);
@@ -650,11 +649,13 @@ int b_put_byte(int arglist, int rest);
 int b_read(int arglist, int rest);
 int b_real(int arglist, int rest);
 int b_reconsult(int arglist, int rest);
+int b_rename(int arglist, int rest);
 int b_repeat(int arglist, int rest);
 int b_retract(int arglist, int rest);
 int b_reverse(int arglist, int rest);
 int b_reconsult_predicate(int arglist, int rest);
 int b_reconsult_predicate_list(int arglist, int rest);
+int b_rmdir(int arglist, int rest);
 int b_see(int arglist, int rest);
 int b_seeing(int arglist, int rest);
 int b_seen(int arglist, int rest);

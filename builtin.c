@@ -53,12 +53,13 @@ void initbuiltin(void){
     defbuiltin("atom",b_atom);
     defbuiltin("atomic",b_atomic);
     defbuiltin("break",b_break);
-    defbuiltin("chdir",b_change_directory);
+    defbuiltin("chdir",b_chdir);
     defbuiltin("close",b_close);
     defbuiltin("compare",b_compare);
     defbuiltin("compound",b_compound);
     defbuiltin("concat",b_concat);
     defbuiltin("consult",b_consult);
+    defbuiltin("create",b_create);
     defbuiltin("date",b_date);
     defbuiltin("date_day",b_date_day);
     defbuiltin("dec",b_dec);
@@ -66,6 +67,7 @@ void initbuiltin(void){
     defbuiltin("display",b_write_canonical);
     defbuiltin("debug",b_debug);
     defbuiltin("edit",b_nano);
+    defbuiltin("eq",b_eq);
     defbuiltin("fail",b_fail);
     defbuiltin("flush",b_flush_output);
     defbuiltin("float",b_real);
@@ -73,6 +75,7 @@ void initbuiltin(void){
     defbuiltin("gc",b_gbc);
     defbuiltin("get",b_get);
     defbuiltin("get0",b_get0);
+    defbuiltin("get0_noecho",b_get0_noecho);
     defbuiltin("get_code",b_get_code);
     defbuiltin("get_byte",b_get_byte);
     defbuiltin("ground",b_ground);
@@ -86,7 +89,7 @@ void initbuiltin(void){
     defbuiltin("length",b_length);
     defbuiltin("listing",b_listing);
     defbuiltin("list",b_list);
-    defbuiltin("mkdir",b_make_directory);
+    defbuiltin("mkdir",b_mkdir);
     defbuiltin("measure",b_measure);
     defbuiltin("name",b_atom_codes);
     defbuiltin("nl",b_nl);
@@ -101,7 +104,9 @@ void initbuiltin(void){
     defbuiltin("reconsult",b_reconsult);
     defbuiltin("read",b_read);
     defbuiltin("real",b_real);
+    defbuiltin("rename",b_rename);
     defbuiltin("reverse",b_reverse);
+    defbuiltin("rmdir",b_rmdir);
     defbuiltin("see",b_see);
     defbuiltin("seeing",b_seeing);
     defbuiltin("seen",b_seen);
@@ -574,6 +579,22 @@ int b_get(int arglist, int rest){
 }
 
 
+int b_get0_noecho(int arglist, int rest){
+    int n,c,arg1,i,res;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = deref(car(arglist));
+        c = getchar();
+        i = makeint((int)c);
+        res = unify(arg1,i);
+        return(res);
+    }
+    return(NO);
+}
+
+
+
 
 int b_get_code(int arglist, int rest){
     int n,arg1,arg2,c,i,res;
@@ -770,18 +791,111 @@ int b_read(int arglist, int rest){
     return(NO);
 }
 
+int b_create(int arglist, int rest){
+    int n,arg1,arg2,stream;
 
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"create ",arg2);
+        if(!atomp(arg2))
+            error(NOT_ATOM,"create ",arg2);
 
-
-int b_open(int nest, int n){
-    
+        if(eqp(arg1,makeconst("user"))){
+            output_stream = standard_output;
+            return(YES);
+        }
+        else{
+            stream = makestream(fopen(GET_NAME(arg2),"w"),OPL_OUTPUT,OPL_TEXT,NIL,arg2);
+            
+            if(GET_PORT(stream) == NULL)
+                error(CANT_OPEN, "create ", arg2);
+            unify(arg1,stream);
+            return(YES);
+        }
+    }
     return(NO);
 }
 
 
 
-int b_close(int nest, int n){
-    
+
+int b_open(int arglist, int rest){
+    int n,arg1,arg2,arg3,stream;
+    FILE* fp;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"open ",arg2);
+        if(!atomp(arg2))
+            error(NOT_ATOM,"open ",arg2);
+
+        if(eqp(arg1,makeconst("user"))){
+            output_stream = standard_output;
+            return(YES);
+        }
+        else{
+            fp = fopen(GET_NAME(arg2),"r");
+            if(fp == NULL){
+                fclose(fp);
+                error(FILE_EXIST,"open ",arg2);
+            }
+
+            if(arg3 == makeconst("w")){
+                stream = makestream(fopen(GET_NAME(arg2),"w"),OPL_OUTPUT,OPL_TEXT,NIL,arg2);
+            
+                if(GET_PORT(stream) == NULL)
+                    error(CANT_OPEN, "open ", arg2);
+                unify(arg1,stream);
+                return(YES);
+            }
+            else if(arg3 == makeconst("r")){
+                stream = makestream(fopen(GET_NAME(arg2),"r"),OPL_INPUT,OPL_TEXT,NIL,arg2);
+            
+                if(GET_PORT(stream) == NULL)
+                    error(CANT_OPEN, "open ", arg2);
+                unify(arg1,stream);
+                return(YES);
+            }
+            else if(arg3 == makeconst("rw")){
+                stream = makestream(fopen(GET_NAME(arg2),"r+"),OPL_INPUT,OPL_TEXT,NIL,arg2);
+            
+                if(GET_PORT(stream) == NULL)
+                    error(CANT_OPEN, "open ", arg2);
+                unify(arg1,stream);
+                return(YES);
+            }
+            else if(arg3 == makeconst("a") || arg3 == makeconst("ra")){
+                stream = makestream(fopen(GET_NAME(arg2),"a+"),OPL_INPUT,OPL_TEXT,NIL,arg2);
+            
+                if(GET_PORT(stream) == NULL)
+                    error(CANT_OPEN, "open ", arg2);
+                unify(arg1,stream);
+                return(YES);
+            }
+            error(NOT_OPEN_OPTION,"open ", arg2);
+        }
+    }
+    return(NO);
+}
+
+
+
+int b_close(int arglist, int rest){
+    int n,arg1;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        fclose(GET_PORT(arg1));
+        return(YES);
+    }
     return(NO);
 }
 
@@ -1293,6 +1407,24 @@ int b_notequalp(int arglist, int rest){
     }
     return(NO);
 }
+
+int b_eq(int arglist, int rest){
+    int n,arg1,arg2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(arg1 == arg2)
+            return(YES);
+        else
+            return(NO);
+    }
+    return(NO);
+}
+
+
 
 int b_compare(int arglist, int rest){
     int n,arg1,arg2,arg3;
@@ -2875,38 +3007,52 @@ int o_ignore(int nest, int n){
 
 
 //-----------file system-------------------
-int b_make_directory(int arglist, int rest){
+int b_mkdir(int arglist, int rest){
     int n,arg1;
 
     n = length(arglist);
     if(n == 1){
         arg1 = car(arglist);
         if(wide_variable_p(arg1))
-            error(INSTANTATION_ERR,"make_directory ",arg1);
+            error(INSTANTATION_ERR,"mkdir ",arg1);
         if(!atomp(arg1))
-            error(NOT_ATOM,"make_directory ", arg1);
+            error(NOT_ATOM,"mkdir ", arg1);
 
-        #ifdef IS_WINDOWS
-            mkdir(GET_NAME(arg1));
-        #else   
-            mkdir(GET_NAME(arg1),0777);
-        #endif
+        mkdir(GET_NAME(arg1),0777);
         return(YES);
     }
     return(NO);
 }
 
 
-int b_change_directory(int arglist , int rest){
+int b_rmdir(int arglist, int rest){
     int n,arg1;
 
     n = length(arglist);
     if(n == 1){
         arg1 = car(arglist);
         if(wide_variable_p(arg1))
-            error(INSTANTATION_ERR,"change_directory ",arg1);
+            error(INSTANTATION_ERR,"rmdir ",arg1);
         if(!atomp(arg1))
-            error(NOT_ATOM,"change_directory ", arg1);
+            error(NOT_ATOM,"rmdir ", arg1);
+
+        rmdir(GET_NAME(arg1));
+        return(YES);
+    }
+    return(NO);
+}
+
+
+int b_chdir(int arglist , int rest){
+    int n,arg1;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"chdir ",arg1);
+        if(!atomp(arg1))
+            error(NOT_ATOM,"chdir ", arg1);
 
         if(chdir(GET_NAME(arg1)) != -1)
             return(YES);
@@ -2933,6 +3079,29 @@ int b_delete(int arglist, int rest){
     return(NO);
 }
 
+
+int b_rename(int arglist, int rest){
+    int n,arg1,arg2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"rename ",arg1);
+        if(!atomp(arg1))
+            error(NOT_ATOM,"rename ", arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"rename ",arg2);
+        if(!atomp(arg2))
+            error(NOT_ATOM,"rename ", arg2);
+        
+
+        rename(GET_NAME(arg1),GET_NAME(arg2));
+        return(YES);
+    }
+    return(NO);
+}
 
 
 int b_nano(int arglist, int rest){
