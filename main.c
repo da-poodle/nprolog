@@ -14,8 +14,10 @@ written by kenichi sasagawa 2016/8~
 int proof = 0;
 cell heap[CELLSIZE];
 int cell_hash_table[HASHTBSIZE];
-int variant[VARIANTSIZE][2];
+int variant[VARIANTSIZE];
 int stack[STACKSIZE];
+int record_hash_table[HASHTBSIZE][RECORDMAX];  //for hash record database 
+int record_pt = 1;                             // current index of record database
 token stok = {GO,OTHER};
 jmp_buf buf;
 int variables = NIL;
@@ -24,6 +26,8 @@ int spy_list = NIL;
 int reconsult_list = NIL;
 int execute_list = NIL;
 int op_list = NIL;
+int record_list = NIL;
+int error_code = 0;
 int unread = NIL;     //for parse
 int paren_nest = 0;   //for parse check ((()))
 int line;
@@ -91,6 +95,7 @@ char builtin[BUILTIN_NUMBER][30] = {
 {"delete"},{"rename"},
 {"op"},{"!"},{"assert"},{"asserta"},{"assertz"},
 {"abolish"},{"read"},{"write"},{"put"},{"get"},{"get0"},{"get0_noecho"},{"nl"},
+{"read_line"},
 {"tab"},{"fail"},{"not"},{"true"},{"halt"},{"abort"},
 {"listing"},{"functor"},{"arg"},
 {"writeq"},{"display"},
@@ -106,7 +111,9 @@ char builtin[BUILTIN_NUMBER][30] = {
 {"sort"},{"keysort"},{"length"},{"shell"},{"measure"},
 {"ansi_cuu"},{"ansi_cud"},{"ansi_cuf"},{"ansi_cub"},
 {"ansi_cup"},{"ansi_cpr"},{"ansi_scp"},{"ansi_rcp"},
-{"ansi_ed"},{"ansi_el"}
+{"ansi_ed"},{"ansi_el"},{"errorcode"},
+{"recordh"},{"recorda"},{"recordz"},{"instance"},{"removeallh"},
+{"stdin"},{"stdout"},{"stdinout"}
 };
 
 //compiled predicate
@@ -114,7 +121,7 @@ char compiled[COMPILED_NUMBER][30] ={
 {"append"},{"member"},{"repeat"},
 {"retract"},{"clause"},{"call"},
 {"current_visible"},{"stream_property"},{"between"},
-{"current_predicate"},{"current_op"}
+{"current_predicate"},{"current_op"},{"retrieveh"},{"removeh"}
 };
 
 //extened predicate
@@ -163,7 +170,7 @@ int ed_incomment = -1; /*...*/
 int main(int argc, char *argv[]){
     int opt;
 
-    printf("N-Prolog Ver 0.06\n");
+    printf("N-Prolog Ver 1.0\n");
     signal(SIGINT,reset);
     initcell();
     initbuiltin();
@@ -254,8 +261,7 @@ void init_repl(void){
     cut_flag = 0;
     //initialize variant variable
     for(i=0; i<VARIANTSIZE; i++){
-        variant[i][0] = UNBIND;
-        variant[i][1] = UNBIND;
+        variant[i] = UNBIND;
     }
     i = variables;
     while(!nullp(i)){

@@ -163,8 +163,9 @@ Xが浮動小数点数かどうかを調べる。
 □ functor(Struct,Name,Arity)
 ストラクチャ名とアリティーを戻す。
 
-□ gc
+□ gc(Amount)
 ガベージコレクションを起動する。
+引数がfullのときはヒープ領域でもう必要としなくなったセルを回収する。
 
 □ get(Char)
 非印刷文字をスキップしながら、標準入力装置から次の文字を読み、
@@ -180,6 +181,9 @@ get0_noechoは標準出力装置にその文字を表示しない。
 
 □ halt
 インタープリタから抜け出す。
+
+□ instance(Ref,Term)
+その参照番号の項を戻す。
 
 □ integer(X)
 Ｘが整数かどうかを調べる。
@@ -216,11 +220,63 @@ rw read and write
 a append
 ra read and append
 
+□ read(Term)
+標準入力装置から項を読み込む。
+
+□ read(Handle,Term)
+ファイルから項を読み込む。
+
+□ read_line(Handle,X)
+Handleで指定したファイルから1行読む。
+
+□ recorda(Key,Term,Ref)
+述語の戦闘に項を加えて、その項の新しい参照番号を戻す。
+
+□ recordz(Key,Term,Ref)
+述語の終わりに項を追加し、その項に割り当てられた参照番号を戻す。
+
+□ recordh(Table_name,Sort_key,Term)
+ハッシュテーブルに項を記録する。
+
+□ removeallh(Table_name)
+ハッシュテーブルを削除する。
+
+□ removeh(Table_name,Sort_key,Term)
+ハッシュテーブルから項を削除する。
+
+□ retrieveh(Table_name,Sort_key,Term)
+ハッシュテーブルから項を戻す。
+
+
 □ rename(Filename,Newname)
 ファイル名を変更する。
 
 □ rmdir(Path)
 ディレクトリを削除する。
+
+□ shell(Command)
+BASHコマンドを実行し、成功する。
+
+□sort(L1.L2)
+リストL1を標準の順序に並び替え、重複を排除しL2にソート済みリストを戻す。
+
+□ spy(Name/Arity)
+デバッグ用のスパイポイントとして述語を指定する。
+
+□ stdin(FileHandle,Goal)
+そのゴールの間、標準入力を変更する。
+
+□ stdout(FileHandle.Goal)
+そのゴールの間、標準入力を変更する。
+
+□ stdinout(InFile,OutFile,goal)
+そのゴールの間、標準入力と標準出力を変更する。
+
+□ string(X)
+Xがストリングかどうかを調べる。
+
+□ string_length(String,Length)
+ストリングの長さを戻す。
 
 □ substring(InString,N,Length,OutString)
 ストリングからサブストリングを抽出する。
@@ -230,12 +286,49 @@ Lengthは抽出する文字列の長さ
 □ system(P)
 Pが組込述語かどうかを調べる。
 
+□ tab(N)
+スペース文字を指定の数だけ標準出力装置に書く。
+
+□ tab(Handle,N)
+スペース文字を指定の数だけファイルに書く。
+
+□ tell(Filename)
+出力のためにファイルをオープンし、それを現在の出力ファイルにする。
+
+□ telling(X) 
+tellによりオープンされている出力ファイルの名前を戻す。
+
+
 □ time(time(Hours,Minutes,Seconds))
 時、分、秒を返す。
 
 時 [0-23]
 分 [0-59]
 秒 [0-61]
+
+□ trace
+デバッガをオンにする。
+
+□ true
+ゴールは常に成功する。
+
+□ var(X)
+Xが代入された変数かどうかを調べる。
+
+□ write(Term)
+標準出力装置に書く。
+
+□ write(Handle,Term)
+指定のファイルに項を書く。
+
+□ writeeq(Term)
+標準出力装置に書き、その項がProlog項として読み出しが可能なように、
+アトムと関数子を引用符で囲む。
+
+□ writeeq(Time,Term)
+項を指定のファイルに書き、その項がProlog項として読み出しが可能なように、
+アトムと関数子を引用符で囲む。
+
 
 -----------DCG：限定節文法-------------------------------------------------
 以下は中島秀之先生の「Prolog」（産業図書）にある例です。

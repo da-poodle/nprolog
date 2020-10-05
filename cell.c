@@ -5,7 +5,7 @@
 
 //-----------------------------
 void initcell(void){
-    int addr,x;
+    int addr,x,y;
 
     for(addr=0; addr < HEAPSIZE; addr++){
         heap[addr].flag = FRE;
@@ -18,6 +18,12 @@ void initcell(void){
 
     for(x=0; x<HASHTBSIZE; x++)
         cell_hash_table[x] = NIL;
+    
+    for(x=0; x<HASHTBSIZE; x++)
+        for(y=0; y<RECORDMAX; y++)
+            record_hash_table[x][y] = NIL;
+    
+
 
 
     //initialize symbol
@@ -71,7 +77,7 @@ void initstream(void){
 void bindsym(int x, int val){
 
     if(alpha_variable_p(x))
-        variant[x-CELLSIZE][0] = val;
+        variant[x-CELLSIZE] = val;
     else if(atom_variable_p(x))
         SET_CAR(x,val);
     else
@@ -85,7 +91,7 @@ void bindsym(int x, int val){
 int findvar(int x){
 
     if(alpha_variable_p(x))
-        return(variant[x - CELLSIZE][0]);
+        return(variant[x - CELLSIZE]);
     else if(atom_variable_p(x))
         return(GET_CAR(x));
     else
@@ -126,6 +132,22 @@ int addatom(char *name, int property, int index){
     return(res);
 }
 
+void add_hash_pred(int pred, int record_id, int index){
+    int addr;
+
+    addr = record_hash_table[index][record_id];
+    if(addr == NIL){
+        addr = cons(pred,NIL);
+        record_hash_table[index][record_id] = addr;
+    }
+    else{
+        while(cdr(addr) != NIL){
+            addr = cdr(addr);
+        }
+        SET_CDR(addr,cons(pred,NIL));
+    }
+}
+
 
 int makeatom(char *name, int property){
     int index,res;
@@ -160,6 +182,8 @@ int makevariant(void){
 
     addr = ac;
     ac++;
+    if(ac >= VARIANTMAX)
+        error(VARIANT_OVERF, "makevariant", NIL);  
     return(addr);
 }
 
@@ -356,8 +380,8 @@ int get_sp(void){
 	return(sp);
 }
 
-int callsubr(int x, int nest, int n){
-    return((GET_SUBR(x)(nest,n)));
+int callsubr(int x, int arglist, int rest){
+    return((GET_SUBR(x)(arglist,rest)));
 }
 
 int set_sp(int x){
@@ -372,6 +396,11 @@ int get_wp(void){
 int set_wp(int x){
     wp = x;
     return(0);
+}
+
+int inc_proof(void){
+    proof++;
+    return(proof);
 }
 
 int listcons(int x, int y){

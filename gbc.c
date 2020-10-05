@@ -32,8 +32,8 @@ void markcell(int addr){
     int x;
 
     if(IS_ALPHA(addr)){
-        if(variant[addr - CELLSIZE][0] != UNBIND){
-            markcell(variant[addr - CELLSIZE][0]);
+        if(variant[addr - CELLSIZE] != UNBIND){
+            markcell(variant[addr - CELLSIZE]);
             return;
         }
         else
@@ -77,7 +77,7 @@ void markcell(int addr){
 }
 
 void gbcmark(void){
-    int i;
+    int i,j;
 
     //mark nil and basic symbol
     MARK_CELL(NIL);
@@ -95,6 +95,11 @@ void gbcmark(void){
     //mark cells chained by symbol hash table
     for(i=0; i<HASHTBSIZE; i++)
         markcell(cell_hash_table[i]);
+    
+    //mark hash table of recordh term
+    for(i=0; i<HASHTBSIZE; i++)
+        for(j=0; j<record_pt; j++)
+            markcell(record_hash_table[i][j]);
 
     //mark stream
     markcell(standard_input);
@@ -106,13 +111,14 @@ void gbcmark(void){
 
     //mark stack
     for(i=0;i<sp;i++){
-        if(alpha_variable_p(stack[i])){
-            markcell(variant[stack[i]-CELLSIZE][0]);
-            markcell(variant[stack[i]-CELLSIZE][1]);
-        }
+        if(alpha_variable_p(stack[i]))
+            markcell(variant[stack[i]-CELLSIZE]);
         else
             markcell(stack[i]);
     }
+
+    //mark record
+    markcell(record_list);
 
 }
 

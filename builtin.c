@@ -68,6 +68,7 @@ void initbuiltin(void){
     defbuiltin("debug",b_debug);
     defbuiltin("edit",b_nano);
     defbuiltin("eq",b_eq);
+    defbuiltin("errorcode",b_errorcode);
     defbuiltin("fail",b_fail);
     defbuiltin("flush",b_flush_output);
     defbuiltin("float",b_real);
@@ -83,6 +84,7 @@ void initbuiltin(void){
     defbuiltin("inc",b_inc);
     defbuiltin("ifthen",b_ifthen);
     defbuiltin("ifthenelse",b_ifthenelse);
+    defbuiltin("instance",b_instance);
     defbuiltin("integer",b_integer);
     defbuiltin("keysort",b_keysort);
     defbuiltin("leash",b_leash);
@@ -103,7 +105,12 @@ void initbuiltin(void){
     defbuiltin("put",b_put);
     defbuiltin("reconsult",b_reconsult);
     defbuiltin("read",b_read);
+    defbuiltin("read_line",b_read_line);
     defbuiltin("real",b_real);
+    defbuiltin("recorda",b_recorda);
+    defbuiltin("recordz",b_recordz);
+    defbuiltin("recordh",b_recordh);
+    defbuiltin("removeallh",b_removeallh);
     defbuiltin("rename",b_rename);
     defbuiltin("reverse",b_reverse);
     defbuiltin("rmdir",b_rmdir);
@@ -112,6 +119,9 @@ void initbuiltin(void){
     defbuiltin("seen",b_seen);
     defbuiltin("shell",b_shell);
     defbuiltin("sort",b_sort);
+    defbuiltin("stdin",b_stdin);
+    defbuiltin("stdinout",b_stdinout);
+    defbuiltin("stdout",b_stdout);
     defbuiltin("string",b_string);
     defbuiltin("string_length",b_string_length);
     defbuiltin("spy",b_spy);
@@ -138,7 +148,8 @@ void initbuiltin(void){
     defcompiled("current_predicate",b_current_predicate);
     defcompiled("current_op",b_current_op);
     defcompiled("between",b_between);
-
+    defcompiled("retrieveh",b_retrieveh);
+    defcompiled("removeh",b_removeh);
 
     //-----JUMP project---------
     defcompiled("n_reconsult_predicate",b_reconsult_predicate);
@@ -163,7 +174,7 @@ void initbuiltin(void){
 }
 
 int b_length(int arglist, int rest){
-    int n,arg1,arg2;
+    int n,arg1,arg2,i,res;
 
     n = length(arglist);
     if(n == 2){
@@ -172,14 +183,20 @@ int b_length(int arglist, int rest){
 
         if(integerp(eval(arg2)) && GET_INT(eval(arg2)) < 0)
             error(NOT_LESS_THAN_ZERO,"length ",arg2);
-        if(!wide_variable_p(arg2) && !integerp(eval(arg2)))
+        if(!wide_variable_p(arg2) && !integerp(arg2))
             error(NOT_INT,"length ",arg2);
-        if(wide_variable_p(arg1) && wide_variable_p(arg2) && eqp(arg1,arg2))
-            error(RESOURCE_ERR,"length ",arg1);
 
-        if(unify(arg2,makeint(length(arg1))) == YES)
-            return(YES);
-
+        if(listp(arg1))
+            return(unify(arg2,makeint(length(arg1))));
+        else if(integerp(arg2)){
+            i = GET_INT(arg2);
+            res = NIL;
+            while(i > 0){
+                res = wlistcons(makeatom("_",ANOY),res);
+                i--;
+            }
+            return(unify(arg1,res));
+        }
         return(NO);
     }
     return(NO);
@@ -781,7 +798,6 @@ int b_read(int arglist, int rest){
         
         save = input_stream;   
         input_stream = arg1;
-        print(input_stream);
 
         temp = variable_to_call(readparse());
         res = unify(arg2,temp);
@@ -790,6 +806,126 @@ int b_read(int arglist, int rest){
     }
     return(NO);
 }
+
+int b_read_line(int arglist, int rest){
+    int n,arg1,arg2,save,res,pos;
+    char str[STRSIZE],c;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"read_line ",arg1);
+        if(!streamp(arg1) && !aliasp(arg1))
+            error(NOT_STREAM,"read_line ",arg1);
+        if(streamp(arg1) && GET_OPT(arg1) == OPL_OUTPUT)
+            error(NOT_INPUT_STREAM,"read_line ", arg1);
+        
+        save = input_stream;   
+        input_stream = arg1;
+
+        c = readc();
+        pos = 0;
+        while(c != EOL && c != EOF){
+            str[pos] = c;
+            pos++;
+            c = readc();
+        }
+        str[pos] = NUL;
+        res = unify(arg2,makeconst(str));
+        input_stream = save;
+        return(res);
+    }
+    return(NO);
+}
+
+
+int b_stdin(int arglist, int rest){
+    int n,arg1,arg2,save1,save2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!streamp(arg1))
+            error(NOT_STREAM,"stdin ",arg1);
+        if(!callablep(arg2))
+            error(NOT_CALLABLE,"stdin ",arg2);
+        
+        save1 = input_stream;
+        save2 = sp;
+        if(prove_all(arg2,sp,0) == YES){
+            input_stream = save1;
+            return(YES);
+        }
+        unbind(save2);
+        input_stream = save1; 
+        return(NO);
+    }
+    return(NO);
+}
+
+int b_stdout(int arglist, int rest){
+    int n,arg1,arg2,save1,save2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!streamp(arg1))
+            error(NOT_STREAM,"stdout ",arg1);
+        if(!callablep(arg2))
+            error(NOT_CALLABLE,"stdout ",arg2);
+        
+        save1 = output_stream;
+        save2 = sp;
+        if(prove_all(arg2,sp,0) == YES){
+            output_stream = save1;
+            return(YES);
+        }
+        unbind(save2);
+        output_stream = save1; 
+        return(NO);
+    }
+    return(NO);
+}
+
+int b_stdinout(int arglist, int rest){
+    int n,arg1,arg2,arg3,save1,save2,save3;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+
+        if(!streamp(arg1))
+            error(NOT_STREAM,"stdinout ",arg1);
+        if(!streamp(arg1))
+            error(NOT_STREAM,"stdinout ",arg2);
+        if(!callablep(arg3))
+            error(NOT_CALLABLE,"stdinout ",arg3);
+        
+        save1 = input_stream;
+        save2 = output_stream;
+        save3 = sp;
+        if(prove_all(arg3,sp,0) == YES){
+            input_stream = save1;
+            output_stream = save2;
+            return(YES);
+        }
+        unbind(save3);
+        input_stream = save1;
+        output_stream = save2; 
+        return(NO);
+    }
+    return(NO);
+}
+
 
 int b_create(int arglist, int rest){
     int n,arg1,arg2,stream;
@@ -1655,7 +1791,7 @@ int b_not(int arglist, int rest){
         if(!callablep(arg1))
             error(NOT_CALLABLE,"not ", arg1);
 
-        res = prove(arg1,sp,rest,0);
+        res = prove(arg1,sp,NIL,0);
         if(res == YES)
             return(NO);
         else
@@ -2257,7 +2393,9 @@ int b_measure(int arglist, int rest){
         end_time = getETime();
         time = end_time - start_time;
         lips = (double)proof / time; 
+        ESCFGREEN;
         printf("Elapsed Time=%.6f (second)  %.0f(LIPS)\n", time,lips);
+        ESCFORG;
         return(res);
     }
     return(NO);
@@ -2988,11 +3126,13 @@ int o_dcg(int x, int y){
 
 
 int b_gbc(int arglist, int rest){
-    int n;
+    int n,arg1;
 
     n = length(arglist);
-    if(n == 0){
-        gbc();
+    if(n == 1){
+        arg1 = car(arglist);
+        if(arg1 == makeconst("full"))
+            gbc();
         return(YES);
     }
     
@@ -3270,13 +3410,8 @@ int b_reverse(int arglist, int rest){
     return(NO);
 }
 
-/*
-between(L, H, L) :- L =< H.
-between(L, H, V) :- L < H, L1 is L + 1, between(L1, H, V).
-*/
-
 int b_between(int arglist, int rest){
-    int n,arg1,arg2,arg3,varL1,varV,varH,varL,body,save1,save2;
+    int n,arg1,arg2,arg3,save1,save2,save3,low,high;
 
     n = length(arglist);
     if(n == 3){
@@ -3296,32 +3431,23 @@ int b_between(int arglist, int rest){
 
         save1 = wp;
         save2 = sp;
-        varH = makevariant();
-        varL = makevariant();
-        if(unify(arg1,varL) == YES &&
-            unify(arg2,varH) == YES &&
-            unify(arg3,varL) == YES){
-                body = wlist3(makeatom("=<",SYS),deref(varL),deref(varH));
-                if(prove(body,sp,rest,0) == YES)
-                    return(YES);
-        }
-        wp = save1;
-        unbind(save2);
-
-        save1 = wp;
-        varL1 = makevariant();
-        varL = makevariant();
-        varH = makevariant();
-        varV = makevariant();
-        if(unify(arg1,varL) == YES &&
-            unify(arg2,varH) == YES &&
-            unify(arg3,varV) == YES){
-            body = wlist3(makeatom(",",OPE),wlist3(makeatom("<",SYS),deref(varL),deref(varH)),wlist3(makeatom(",",OPE),wlist3(makeatom("is",SYS),varL1,wcons(makeatom("+",OPE),wcons(varL,wcons(makeint(1),NIL)))),wcons(makeatom("between",COMP),wcons(varL1,wcons(varH,wcons(varV,NIL))))));
-            if(prove_all(addtail_body(rest,body),sp,0) == YES)
+        save3 = ac;
+        low = get_int(arg1);
+        high = get_int(arg2);
+        while(low <= high){
+            //printf("%d",low);
+            unify(arg3,makeint(low));
+            if(prove_all(rest,sp,0) == YES)
                 return(YES);
+            
+            low++;
+            wp = save1;
+            unbind(save2);
         }
         wp = save1;
         unbind(save2);
+        ac = save3;
+        return(NO);
     }
     return(NO);
 }
@@ -3668,4 +3794,271 @@ int b_time(int arglist, int rest){
     return(NO);
 }
 
+int b_errorcode(int arglist, int rest){
+    int n,arg1;
 
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        return(unify(arg1,makeint(error_code)));
+    }
+    return(NO);
+}
+
+
+//-----------record data type-----------------------------
+/*
+                          CAR,CDR,...,ARITY
+atom of record name    foo[NIL,......,record_id,...]
+
+record_hash_table 
+ ID0   ID1  ID2
+0[7272,1232,9992,...]
+1[3232,9231,2312,...]
+...
+HASHTBLSIZE[]
+
+cell_list
+e.g. hash == 1 ID==1 (ID starts from 1)
+addr 1232 -> [pred1,pred2,...] 
+
+*/
+
+int b_recordh(int arglist, int rest){
+    int n,arg1,arg2,arg3,record_id,index;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);    //table_name
+        arg2 = cadr(arglist);   //sort_key
+        arg3 = caddr(arglist);  //term
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"recordh ", arg1);
+        if(!wide_variable_p(arg1) && !atomp(arg1))
+            error(NOT_ATOM,"recordh ",arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"recordh ", arg2);
+        if(!wide_variable_p(arg2) && !atomp(arg2))
+            error(NOT_ATOM,"recordh ",arg2);
+        if(wide_variable_p(arg3))
+            error(INSTANTATION_ERR,"recordh ", arg3);
+        if(!termp(arg3) && !integerp(arg3))
+            error(NOT_TERM,"record ",arg3);
+
+        if(integerp(arg3))
+            arg3 = get_int(arg3);   //reffernce number -> term
+        else 
+            arg3 = copy_heap(arg3); //copy arg1 to heap area
+
+        SET_ARITY(arg3,arg2);     //set sort key atom
+        if(record_pt >= RECORDMAX)
+            error(RECORD_OVERF,"recordh ",NIL);
+        if(GET_ARITY(arg1) == NIL){
+            SET_ARITY(arg1,record_pt);
+            record_pt++;
+        }
+        record_id = GET_ARITY(arg1)-1; //id starts from 1
+        index = hash(GET_NAME(arg2));
+        add_hash_pred(arg3,record_id,index);
+        checkgbc();
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_retrieveh(int arglist, int rest){
+    int n,arg1,arg2,arg3,save1,record_id,index,lis,term;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"retrieveh ", arg1);
+        if(!wide_variable_p(arg1) && !atomp(arg1))
+            error(NOT_ATOM,"retrieveh ",arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"retrieveh ", arg2);
+        if(!wide_variable_p(arg2) && !atomp(arg2))
+            error(NOT_ATOM,"retrieveh ",arg2);
+    
+        
+        save1 = sp;
+        record_id = GET_ARITY(arg1)-1; //id starts from 1
+        if(record_id < 0)
+            error(NOT_RECORD,"retrieveh ",arg1);
+        index = hash(GET_NAME(arg2));
+        lis = record_hash_table[index][record_id];
+        while(lis != NIL){
+            term = car(lis);
+            if(GET_ARITY(term) != arg2)
+                goto skip;
+
+            unify(arg3,term);
+            if(prove_all(rest,sp,0) == YES)
+                return(YES);
+            
+            unbind(save1);
+            skip:
+            lis = cdr(lis);
+        }
+        return(NO);
+    }
+    return(NO);
+}
+
+
+int b_instance(int arglist, int rest){
+    int n,arg1,arg2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"instance ", arg1);
+        if(!wide_variable_p(arg1) && !integerp(arg1))
+            error(NOT_INT,"instance ",arg1);
+
+        return(unify(arg2,get_int(arg1)));
+    }
+    return(NO);
+}
+
+
+int b_recordz(int arglist, int rest){
+    int n,arg1,arg2,arg3,temp;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);   //key
+        arg2 = cadr(arglist);  //term
+        arg3 = caddr(arglist); //ref 
+
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"recordz ",arg1);
+        if(builtinp(arg1))
+            error(BUILTIN_EXIST,"recordz ",arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"recordz ",arg2);
+        if(!termp(arg2))
+            error(NOT_TERM,"recordz ",arg2);
+        if(!wide_variable_p(arg3))
+            error(NOT_VAR,"recordz ",arg3);
+
+        arg2 = cons(car(arg2),cons(arg1,cdr(arg2))); //insert key to term
+        arg2 = copy_heap(arg2); //copy arg1 to heap area
+        temp = record_list;
+        if(temp == NIL)
+            temp = cons(arg2,NIL);
+        else{
+            while(cdr(temp) != NIL){
+                temp = cdr(temp);
+            }
+            SET_CDR(temp,cons(arg2,NIL));
+        }
+        checkgbc();
+        return(unify(arg3,makeint(arg2)));
+    }
+    return(NO);
+}
+
+int b_recorda(int arglist, int rest){
+    int n,arg1,arg2,arg3;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"recorda ",arg1);
+        if(builtinp(arg1))
+            error(BUILTIN_EXIST,"recorda ",arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"recorda ",arg2);
+        if(!termp(arg2))
+            error(NOT_TERM,"recorda ",arg2);
+        if(!wide_variable_p(arg3))
+            error(NOT_VAR,"recorda ",arg3);
+
+        arg2 = cons(car(arg2),cons(arg1,cdr(arg2))); //insert key to term
+        arg2 = copy_heap(arg2); //copy arg1 to heap area
+        record_list = cons(arg2,record_list);
+        checkgbc();
+        return(unify(arg3,makeint(arg2)));
+        
+    }
+    return(NO);
+}
+
+
+int b_removeh(int arglist, int rest){
+    int n,arg1,arg2,arg3,save1,record_id,index,lis,prev,term;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"remove ", arg1);
+        if(!wide_variable_p(arg1) && !atomp(arg1))
+            error(NOT_ATOM,"remove ",arg1);
+        if(wide_variable_p(arg2))
+            error(INSTANTATION_ERR,"remove ", arg2);
+        if(!wide_variable_p(arg2) && !atomp(arg2))
+            error(NOT_ATOM,"remove ",arg2);
+    
+        
+        save1 = sp;
+        record_id = GET_ARITY(arg1)-1; //id starts from 1
+        if(record_id < 0)
+            error(NOT_RECORD,"remove ",arg1);
+        index = hash(GET_NAME(arg2));
+        repeat:
+        lis = record_hash_table[index][record_id];
+        prev = NIL;
+        while(lis != NIL){
+            term = car(lis);
+            if(GET_ARITY(term) != arg2)
+                goto skip;
+
+            if(unify(arg3,term)){
+                if(prev != NIL)
+                    SET_CDR(prev,cdr(lis)); // delete unified term
+                else
+                    record_hash_table[index][record_id] = cdr(lis); 
+                    // if term is first one of list, set hashtable cdr of lis
+                if(prove_all(rest,sp,0) == YES)
+                    return(YES);
+            }
+            unbind(save1);
+            if(prev == NIL)
+                goto repeat;
+            skip:
+            lis = cdr(lis);
+            prev = lis;
+        }
+        return(NO);
+    }
+    return(NO);
+}
+
+int b_removeallh(int arglist, int rest){
+    int n,arg1,record_id,i;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        record_id = GET_ARITY(arg1)-1;
+        SET_ARITY(arg1,NIL);
+        for(i=0;i<HASHTBSIZE;i++)
+            record_hash_table[i][record_id] = NIL;
+        //as a result, removed term will be retrieve by GC
+        return(YES);
+    }
+    return(NO);
+}

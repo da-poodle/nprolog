@@ -713,6 +713,14 @@ int predicatep(int addr){
         return(0);
 }
 
+int termp(int addr){
+    if(structurep(addr) && GET_AUX(addr) != LIST &&
+       IS_INCELL(car(addr)) && GET_AUX(car(addr)) == PRED)
+        return(1);
+    else
+        return(0);
+}
+
 int atom_predicate_p(int addr){
     if(IS_INCELL(addr) && GET_AUX(addr) == PRED)
         return(1);
@@ -1287,13 +1295,11 @@ void unbind(int x){
 
     for(i=x; i<sp; i++){
         if(alpha_variable_p(stack[i])){
-            variant[stack[i]-CELLSIZE][0] = UNBIND;
-            variant[stack[i]-CELLSIZE][1] = UNBIND;
+            variant[stack[i]-CELLSIZE] = UNBIND;
         }
         else if(atom_variable_p(stack[i])){
             if(alpha_variable_p(GET_CAR(stack[i]))){
-                variant[GET_CAR(stack[i])-CELLSIZE][0] = UNBIND;
-                variant[GET_CAR(stack[i])-CELLSIZE][1] = UNBIND;
+                variant[GET_CAR(stack[i])-CELLSIZE] = UNBIND;
             }
             SET_CAR(stack[i],UNBIND);
             SET_CDR(stack[i],UNBIND);
@@ -1406,7 +1412,7 @@ void printenv(void){
         if(alpha_variable_p(stack[i])){
             print(stack[i]);
             printf("=");
-            print(variant[stack[i]-CELLSIZE][0]);
+            print(variant[stack[i]-CELLSIZE]);
         }
         else if(atom_variable_p(stack[i])){
             print(stack[i]);

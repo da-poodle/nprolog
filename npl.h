@@ -4,12 +4,20 @@ written by kenichi sasagawa 2016/9~
 #include <setjmp.h>
 #include <stdio.h>
 
-#define CELLSIZE 10000000
-#define HEAPSIZE  7000000
-#define FREESIZE      500
-#define STACKSIZE   1000000
-#define VARIANTSIZE  5000000
-#define VARIANTMAX  15000000
+/*
+memory map
+address 
+0          - 17,000,000  heap area
+17,000,001 - 20,000,000  working area 
+20,000,001 - 40,000,000  variant area
+*/
+#define CELLSIZE    20000000  // this is max on raspberryPI3. If parsonal computer 30000000 is OK
+#define HEAPSIZE    17000000
+#define FREESIZE         500
+#define STACKSIZE    1000000
+#define VARIANTSIZE  20000000
+#define VARIANTMAX  CELLSIZE + VARIANTSIZE
+#define RECORDMAX 12
 #define ATOMSIZE 256
 #define BUFSIZE 256
 #define STRSIZE 256
@@ -123,11 +131,13 @@ typedef struct token {
 
 
 extern cell heap[CELLSIZE];
-extern int variant[VARIANTSIZE][2];
+extern int variant[VARIANTSIZE];
 extern int stack[STACKSIZE];
 extern token stok;
 extern jmp_buf buf;
 extern int cell_hash_table[HASHTBSIZE];
+extern int record_hash_table[HASHTBSIZE][RECORDMAX]; 
+extern int record_pt;                       
 extern int variables;
 extern int predicates;
 extern int spy_list;
@@ -135,6 +145,8 @@ extern int error_flag;
 extern int reconsult_list;
 extern int execute_list;
 extern int op_list;
+extern int record_list;
+extern int error_code;
 extern int proof;
 extern int parse_mode;
 extern int line;
@@ -333,65 +345,63 @@ extern int fc; //free counter
 extern int ac; //alpha conversion variable counter
 extern int wp; //working pointer
 
-#if defined( __linux) || defined(__OpenBSD__)    
-    //-----editor-----
-    extern int repl_flag;
-    extern int buffer[256][10];
-    extern int ed_row;
-    extern int ed_col;
-    extern int ed_start;
-    extern int ed_end;
-    extern int ed_ins;
-    extern int ed_tab;
-    extern int ed_indent;
-    extern int ed_name;
-    extern int ed_lparen_row;
-    extern int ed_lparen_col;
-    extern int ed_rparen_row;
-    extern int ed_rparen_col;
-    extern int ed_lbracket_row;
-    extern int ed_lbracket_col;
-    extern int ed_rbracket_row;
-    extern int ed_rbracket_col;
-    extern char ed_candidate[15][30];
-    extern int ed_candidate_pt;
-    extern int ed_operator_color;
-    extern int ed_builtin_color;
-    extern int ed_extended_color;
-    extern int ed_quote_color;
-    extern int ed_comment_color;
-    extern int ed_function_color;
-    extern int ed_incomment;
 
-    #define ESCHOME printf("\33[1;1H")
-    #define ESCTOP  printf("\33[2;1H")
-    #define ESCCLS  printf("\33[2J")
-    #define ESCCLS1 printf("\33[0J")
-    #define ESCCLSL printf("\33[0K")
-    #define ESCMVLEFT(x) printf("\33[%dG", x)
-    #define ESCMVR  printf("\33[1C")
-    #define ESCMVL  printf("\33[1D")
-    #define ESCMVU  printf("\33[1A")
-    #define ESCMVD  printf("\33[1B")
-    #define ESCSCR  printf("\33[S")
-    #define ESCMOVE(x,y)    printf("\33[%d;%df", x,y)
-    #define ESCCOLOR(x)     printf("\33[%dm",x)
-    #define ESCFBLACK printf("\33[30m")
-    #define ESCFRED  printf("\33[31m")
-    #define ESCFGREEN printf("\33[32m")
-    #define ESCFYELLOW printf("\33[33m")
-    #define ESCFBLUE printf("\33[34m")
-    #define ESCFMAGENTA printf("\33[35m")
-    #define ESCFCYAN printf("\33[36m")
-    #define ESCFWHITE printf("\33[37m")
-    #define ESCFORG  printf("\33[39m")
-    #define ESCBCYAN printf("\33[46m")
-    #define ESCBORG  printf("\33[49m")
-    #define ESCREV  printf("\33[7m")
-    #define ESCRST  printf("\33[0m")
-    #define ESCBOLD printf("\33[1m")
+//-----editor-----
+extern int repl_flag;
+extern int buffer[256][10];
+extern int ed_row;
+extern int ed_col;
+extern int ed_start;
+extern int ed_end;
+extern int ed_ins;
+extern int ed_tab;
+extern int ed_indent;
+extern int ed_name;
+extern int ed_lparen_row;
+extern int ed_lparen_col;
+extern int ed_rparen_row;
+extern int ed_rparen_col;
+extern int ed_lbracket_row;
+extern int ed_lbracket_col;
+extern int ed_rbracket_row;
+extern int ed_rbracket_col;
+extern char ed_candidate[15][30];
+extern int ed_candidate_pt;
+extern int ed_operator_color;
+extern int ed_builtin_color;
+extern int ed_extended_color;
+extern int ed_quote_color;
+extern int ed_comment_color;
+extern int ed_function_color;
+extern int ed_incomment;
 
-#endif
+#define ESCHOME printf("\33[1;1H")
+#define ESCTOP  printf("\33[2;1H")
+#define ESCCLS  printf("\33[2J")
+#define ESCCLS1 printf("\33[0J")
+#define ESCCLSL printf("\33[0K")
+#define ESCMVLEFT(x) printf("\33[%dG", x)
+#define ESCMVR  printf("\33[1C")
+#define ESCMVL  printf("\33[1D")
+#define ESCMVU  printf("\33[1A")
+#define ESCMVD  printf("\33[1B")
+#define ESCSCR  printf("\33[S")
+#define ESCMOVE(x,y)    printf("\33[%d;%df", x,y)
+#define ESCCOLOR(x)     printf("\33[%dm",x)
+#define ESCFBLACK printf("\33[30m")
+#define ESCFRED  printf("\33[31m")
+#define ESCFGREEN printf("\33[32m")
+#define ESCFYELLOW printf("\33[33m")
+#define ESCFBLUE printf("\33[34m")
+#define ESCFMAGENTA printf("\33[35m")
+#define ESCFCYAN printf("\33[36m")
+#define ESCFWHITE printf("\33[37m")
+#define ESCFORG  printf("\33[39m")
+#define ESCBCYAN printf("\33[46m")
+#define ESCBORG  printf("\33[49m")
+#define ESCREV  printf("\33[7m")
+#define ESCRST  printf("\33[0m")
+#define ESCBOLD printf("\33[1m")
 
 
 //-------read--------
@@ -485,6 +495,10 @@ extern int wp; //working pointer
 #define NOT_CHAR_CODE       66
 #define RESOURCE_ERR        67
 #define NOT_ORDER           68
+#define NOT_TERM            69
+#define RECORD_OVERF        70
+#define NOT_RECORD          71
+#define VARIANT_OVERF       72
 
 
 double getETime(void);
@@ -592,6 +606,7 @@ int b_eq(int arglist, int rest);
 int b_eqgreater(int arglist, int rest);
 int b_eqsmaller(int arglist, int rest);
 int b_equalp(int arglist, int rest);
+int b_errorcode(int arglist, int rest);
 int b_fail(int arglist, int rest);
 int b_findatom(int arglist, int rest);
 int b_filename(int arglist, int rest);
@@ -612,6 +627,7 @@ int b_halt(int arglist, int rest);
 int b_inc(int arglist, int rest);
 int b_ifthen(int arglist, int rest);
 int b_ifthenelse(int arglist, int rest);
+int b_instance(int arglist, int rest);
 int b_integer(int arglist, int rest);
 int b_is(int arglist, int rest);
 int b_keysort(int arglist, int rest);
@@ -647,15 +663,22 @@ int b_put_char(int arglist, int rest);
 int b_put_code(int arglist, int rest);
 int b_put_byte(int arglist, int rest);
 int b_read(int arglist, int rest);
+int b_read_line(int arglist, int rest);
 int b_real(int arglist, int rest);
+int b_recorda(int arglist, int rest);
+int b_recordz(int arglist, int rest);
+int b_recordh(int arglist, int rest);
 int b_reconsult(int arglist, int rest);
 int b_rename(int arglist, int rest);
 int b_repeat(int arglist, int rest);
 int b_retract(int arglist, int rest);
+int b_retrieveh(int arglist, int rest);
 int b_reverse(int arglist, int rest);
 int b_reconsult_predicate(int arglist, int rest);
 int b_reconsult_predicate_list(int arglist, int rest);
 int b_rmdir(int arglist, int rest);
+int b_removeh(int arglist, int rest);
+int b_removeallh(int arglist, int rest);
 int b_see(int arglist, int rest);
 int b_seeing(int arglist, int rest);
 int b_seen(int arglist, int rest);
@@ -665,6 +688,9 @@ int b_shell(int arglist, int rest);
 int b_smaller(int arglist, int rest);
 int b_sort(int arglist, int rest);
 int b_spy(int arglist, int rest);
+int b_stdin(int arglist, int rest);
+int b_stdout(int arglist, int rest);
+int b_stdinout(int arglist, int rest);
 int b_string(int arglist, int rest);
 int b_string_length(int arglist, int rest);
 int b_substring(int arglist, int rest);
@@ -839,6 +865,7 @@ int heavy999p(int addr);
 int last(int x);
 int ifthenp(int addr);
 int ignore_optin_p(int x);
+int inc_proof(void);
 int infixp(int addr);
 int infix_operator_p(int addr);
 int insert(int x, int y);
@@ -985,6 +1012,7 @@ int string_length(int addr);
 int singlep(int addr);
 int streqp(int x, int y);
 int symboltoken(char buf[]);
+int termp(int addr);
 int term_variables(int x, int y);
 int type_option_p(int x);
 int thunkp(int addr);
@@ -1023,6 +1051,7 @@ int wlist8(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8);
 int wlist9(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, int x9);
 int wlist10(int x1, int x2, int x3, int x4, int x5, int x6, int x7, int x8, int x9, int x10);
 int zerop(int x);
+void add_hash_pred(int pred, int record_id, int index);
 void add_data(int pred, int data);
 void addtail_body1(int x, int y);
 void assign_variant(int x);

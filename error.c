@@ -11,6 +11,8 @@
 //-------error------
 void error(int errnum, char *fun, int arg){
 
+    error_code = errnum;
+    ESCFRED;
     switch(errnum){
         case SYNTAX_ERR:    printf("Syntax error %s ", fun);
 														if(!error_flag && arg > 24)
@@ -103,6 +105,9 @@ void error(int errnum, char *fun, int arg){
                             break;
 
         case STACK_OVERF:   printf("Stack over flow ");
+                            break;
+
+        case VARIANT_OVERF:   printf("Variant over flow ");
                             break;
 
         case SYSTEM_ERROR:  printf("System error at %s ", fun);
@@ -223,7 +228,19 @@ void error(int errnum, char *fun, int arg){
         case NOT_OPEN_OPTION:
                             printf("Not open option %s ", fun);
                             print(arg);
-                            break;       
+                            break; 
+
+        case NOT_TERM:      printf("Not term %s ", fun);
+                            print(arg);
+                            break;      
+        
+        case RECORD_OVERF:  printf("recordh tables max over %s ", fun);
+                            break;      
+        
+        case NOT_RECORD:    printf("recordh tables has no record %s ", fun);
+                            print(arg);
+                            break;   
+                      
   }
     printf("\n");
     stok.ch = NUL;
@@ -238,5 +255,6 @@ void error(int errnum, char *fun, int arg){
         fflush(stdout);
         fclose(GET_PORT(input_stream));
     }
+    ESCFORG;
     longjmp(buf,1);
 }
