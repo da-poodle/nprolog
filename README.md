@@ -6,6 +6,9 @@ About Arity/prolog32  see  http://petergabel.info/ArityProlog32/ArityProlog32Pre
 
 ## Installation
 On Linux  type "make" on terminal.
+
+On Raspberry Pi type "make raspi" on terminal.
+
 see https://www.youtube.com/watch?v=IJTj8VRxUHc&fbclid=IwAR1KLf1ytyTlGX26dEzYru83Wu679HvKi-v87MdtIS_cvRM9Qr4wZZW3wD4
 
 # invoke
@@ -28,7 +31,7 @@ I hope that Prolog will become more popular. I hope many people enjoy Prolog. NP
 
 ## example
 ```prolog
-N-Prolog Ver 0.09
+N-Prolog Ver 1.12
 ?- length([1,2,3],X).
 X = 3
 yes
@@ -114,18 +117,25 @@ close/1
 compare/3
 concat/3
 consult/1
+ctr_set/2
+ctr_dec/2
+ctr_inc/2
+ctr_is/2
 current_op/3
 current_predicate/1
 date/1
 date_day/2
 dec/2
 delete/1
+directory/6
 display/1
+dup/2
 edit/1
 eq/2
 expand_term/2
 fail/0
 float/1
+float_text/3
 flush/0 
 gc/0
 get/1
@@ -136,6 +146,7 @@ get0_noecho/1
 halt/0
 ifthen/2
 ifthenelse/3
+in/2
 inc/2
 instance/2
 integer/1
@@ -153,6 +164,7 @@ nospy/1
 notrace/0
 number/1
 not/1
+out/1
 open/3
 read/1
 read_line/2
@@ -160,6 +172,8 @@ reconsult/1
 recorda/3
 recordh/3
 recordz/3
+ref/1
+reset_op/0
 retrieveh/3
 rmdir/1
 see/1
@@ -170,6 +184,8 @@ sort/2
 spy/1
 string/1
 string_length/2
+string_term/2
+syntaxerrors/2
 system/1
 tell/1
 telling/1
@@ -197,6 +213,28 @@ member/2
 measure/1   (measure elapsed time)
 reverse/2
 ```
+
+# wiringPi 
+On paspberry PI, on terminal enter "make raspi".
+As a result, N-Prolog includes builtin predicates of WiringPi. 
+
+
+```
+N-Prolog <==================================> C
+wiringpi_spi_setup(ch speed) <===> wiringPiSPISetup (SPI_CH, SPI_SPEED)
+wiringpi_setup_gpio  <===> wiringPiSetupGpio()
+pin_mode(n, 'output) <====> pinMode(n, OUTPUT) or 'input -> INPUT 'pwm-output -> PWM_OUTPUT
+digital_write(n, v) <===> digitalWrite(n, v)
+digital_write_byte(v) <===> digitalWriteByte(value)
+digital_read(pin) <===> digitalRead(pin)
+delay(howlong) <===> void delay(unsigned int howLong)
+pull_up_dn_control(pin, pud) <===> pullUpDnControl(pin,pud)
+pwm_set_mode('pwm_mode_ms) <===> pwmSetMode(PWM_MODE_MS); or 'pwm_mode_bal -> PWM_MODE_BAL
+pwm_set_clock(n) <===> pwmSetClock(n)
+pwm_set_range(n) <===> pwmSetRange(n)
+pwm_write(pin, value) <===> pwmWrite(pin , value)
+```
+
 
 # function
 ```

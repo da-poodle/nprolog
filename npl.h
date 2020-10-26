@@ -11,11 +11,11 @@ address
 17,000,001 - 20,000,000  working area 
 20,000,001 - 40,000,000  variant area
 */
-#define CELLSIZE    20000000  // this is max on raspberryPI3. If parsonal computer 30000000 is OK
+#define CELLSIZE    20000000  // this is max on raspberryPI1B. If parsonal computer 30000000 is OK
 #define HEAPSIZE    17000000
 #define FREESIZE         500
 #define STACKSIZE    1000000
-#define VARIANTSIZE  20000000
+#define VARIANTSIZE 20000000
 #define VARIANTMAX  CELLSIZE + VARIANTSIZE
 #define RECORDMAX 12
 #define ATOMSIZE 256
@@ -25,7 +25,7 @@ address
 #define FUNCTION_NUMBER 19
 #define BUILTIN_NUMBER 200
 #define COMPILED_NUMBER 23
-#define EXTENDED_NUMBER  12
+#define EXTENDED_NUMBER  20
 #define NIL     0
 #define YES     2
 #define NO      4
@@ -46,7 +46,7 @@ address
 #define OPLFALSE    34
 #define CURL    36
 #define IFTHEN  38
-#define NUMVAR  40
+#define IFTHENELSE  40
 #define UNDERBAR    42
 #define DOTOBJ  44
 #define DCG   46
@@ -137,7 +137,9 @@ extern token stok;
 extern jmp_buf buf;
 extern int cell_hash_table[HASHTBSIZE];
 extern int record_hash_table[HASHTBSIZE][RECORDMAX]; 
-extern int record_pt;                       
+extern int record_pt;       
+extern int counter[31]; 
+extern int string_term_buffer[STRSIZE];
 extern int variables;
 extern int predicates;
 extern int spy_list;
@@ -191,7 +193,7 @@ extern int error_stream;
 #define OFF     0
 #define ON      1    
 
-
+#define FLUSH               __fpurge(stdin); 
 #define DEBUG               printf("debug\n"); longjmp(buf,2);
 #define GET_FLT(addr)       heap[addr].val.fltnum
 #define GET_CAR(addr)       heap[addr].val.car.intnum
@@ -337,6 +339,8 @@ extern int ignore_flag;
 extern int link_flag;
 extern int listing_flag;
 extern int prefix_flag;
+extern int syntax_flag;
+extern int string_term_flag;
 
 //------pointer----
 extern int hp; //heap pointer
@@ -348,7 +352,7 @@ extern int wp; //working pointer
 
 //-----editor-----
 extern int repl_flag;
-extern int buffer[256][10];
+extern int buffer[BUFSIZE][10];
 extern int ed_row;
 extern int ed_col;
 extern int ed_start;
@@ -365,7 +369,7 @@ extern int ed_lbracket_row;
 extern int ed_lbracket_col;
 extern int ed_rbracket_row;
 extern int ed_rbracket_col;
-extern char ed_candidate[15][30];
+extern char ed_candidate[30][30];
 extern int ed_candidate_pt;
 extern int ed_operator_color;
 extern int ed_builtin_color;
@@ -377,7 +381,7 @@ extern int ed_incomment;
 
 #define ESCHOME printf("\33[1;1H")
 #define ESCTOP  printf("\33[2;1H")
-#define ESCCLS  printf("\33[2J")
+#define ESCCLS  printf("\33[2J")          //clear screen
 #define ESCCLS1 printf("\33[0J")
 #define ESCCLSL printf("\33[0K")
 #define ESCMVLEFT(x) printf("\33[%dG", x)
@@ -419,18 +423,18 @@ extern int ed_incomment;
 #define CR      13
 #define VT      11
 
-#if defined(__linux) || defined(__OpenBSD__)
-    #define LEFT    'D'
-    #define UP      'A'
-    #define RIGHT   'C'
-    #define DOWN    'B'
-    #define INSERT  '2'
-    #define DELETE  '3'
-    #define PAGEUP  '5'
-    #define PAGEDN  '6'
-    #define HOME    'H'
-    #define END     'F'
-#endif
+
+#define LEFT    'D'
+#define UP      'A'
+#define RIGHT   'C'
+#define DOWN    'B'
+#define INSERT  '2'
+#define DELETE  '3'
+#define PAGEUP  '5'
+#define PAGEDN  '6'
+#define HOME    'H'
+#define END     'F'
+
 
 //-------error code---
 #define SYNTAX_ERR      1
@@ -589,6 +593,10 @@ int b_consult(int arglist, int rest);
 int b_constant(int arglist, int rest);
 int b_copy_term(int arglist, int rest);
 int b_create(int arglist, int rest);
+int b_ctr_set(int arglist, int rest);
+int b_ctr_dec(int arglist, int rest);
+int b_ctr_inc(int arglist, int rest);
+int b_ctr_is(int artlist, int rest);
 int b_current_directory(int arglist , int rest);
 int b_current_input(int arglist, int rest);
 int b_current_output(int arglist, int rest);
@@ -602,6 +610,8 @@ int b_debug(int arglist, int rest);
 int b_defined_predicate(int arglist, int rest);
 int b_defined_userop(int arglist, int rest);
 int b_delete(int arglist, int rest);
+int b_directory(int arglist, int rest);
+int b_dup(int arglist, int rest);
 int b_eq(int arglist, int rest);
 int b_eqgreater(int arglist, int rest);
 int b_eqsmaller(int arglist, int rest);
@@ -610,6 +620,7 @@ int b_errorcode(int arglist, int rest);
 int b_fail(int arglist, int rest);
 int b_findatom(int arglist, int rest);
 int b_filename(int arglist, int rest);
+int b_float_text(int arglist, int rest);
 int b_flush_output(int arglist, int rest);
 int b_functor(int arglist, int rest);
 int b_gbc(int arglist, int rest);
@@ -669,8 +680,10 @@ int b_recorda(int arglist, int rest);
 int b_recordz(int arglist, int rest);
 int b_recordh(int arglist, int rest);
 int b_reconsult(int arglist, int rest);
+int b_ref(int arglist, int rest);
 int b_rename(int arglist, int rest);
 int b_repeat(int arglist, int rest);
+int b_reset_op(int arglist, int rest);
 int b_retract(int arglist, int rest);
 int b_retrieveh(int arglist, int rest);
 int b_reverse(int arglist, int rest);
@@ -685,6 +698,7 @@ int b_seen(int arglist, int rest);
 int b_set_input(int arglist, int rest);
 int b_set_output(int arglist, int rest);
 int b_shell(int arglist, int rest);
+int b_skip(int arglist, int rest);
 int b_smaller(int arglist, int rest);
 int b_sort(int arglist, int rest);
 int b_spy(int arglist, int rest);
@@ -693,7 +707,9 @@ int b_stdout(int arglist, int rest);
 int b_stdinout(int arglist, int rest);
 int b_string(int arglist, int rest);
 int b_string_length(int arglist, int rest);
+int b_string_term(int arglist, int rest);
 int b_substring(int arglist, int rest);
+int b_syntaxerrors(int arglist, int rest);
 int b_tab(int arglist, int rest);
 int b_tell(int arglist, int rest);
 int b_telling(int arglist, int rest);
@@ -744,8 +760,10 @@ int butlast(int addr);
 int callsubr(int x,int restest,int rest);
 int caar(int addr);
 int cadar(int addr);
-int cadddr(int addr);
 int caddr(int addr);
+int cadddr(int addr);
+int caddddr(int addr);
+int cadddddr(int addr);
 int cadr(int addr);
 int car(int addr);
 int callablep(int addr);
@@ -951,7 +969,6 @@ int nullp(int addr);
 int numberp(int addr);
 int numbertoken(char buf[]);
 int numbervars_option_p(int x);
-int numbervarp(int addr);
 int numeqp(int x, int y);
 int o_cons(int x, int y);
 int o_dcg(int x, int y);
@@ -983,6 +1000,7 @@ int readitem(void);
 int readcurl(void);
 int readlist(void);
 int readparen(void);
+int read_string_term(int flag);
 int remove_cut(int x);
 int replace(int x, int lis);
 int reposition_option_p(int x);
@@ -1142,6 +1160,23 @@ int makestrflt(char *str);
 int makestrlong(char *str);
 void debug(void);
 
+// wiringPI
+#ifdef __arm__
+int b_wiringpi_setup_gpio(int arglist, int rest);
+int b_wiringpi_spi_setup_ch_speed(int arglist, int rest);
+int b_pwm_set_mode(int arglist, int rest);
+int b_pwm_set_range(int arglist, int rest);
+int b_pwm_set_clock(int arglist, int rest);
+int b_pin_mode(int arglist, int rest);
+int b_digital_write(int arglist, int rest);
+int b_digital_write_byte(int arglist, int rest);
+int b_pwm_write(int arglist, int rest);
+int b_pull_up_dn_control(int arglist, int rest);
+int b_digital_read(int arglist, int rest);
+int b_delay(int arglist, int rest);
+int b_delay_microseconds(int arglist, int rest);
+#endif
+
 // edit 
 struct position{
     int row;
@@ -1203,14 +1238,3 @@ int read_line(int flag);
 int count_col(int x);
 int count_col_buffer(int x);
 
-
-// There are a lot of flavours of windows, so define a global flag that can be used for all of them
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
-    #define IS_WINDOWS 1
-#endif
-
-#if IS_WINDOWS 
-    #define FLUSH fflush(stdin);
-#elif __linux
-    #define FLUSH __fpurge(stdin);    
-#endif

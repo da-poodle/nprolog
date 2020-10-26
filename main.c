@@ -5,9 +5,7 @@ written by kenichi sasagawa 2016/8~
 #include <string.h>
 #include <math.h>
 #include <signal.h>
-#ifdef __linux
-  #include <stdio_ext.h>
-#endif
+#include <stdio_ext.h>
 #include "npl.h"
 
 //global vers
@@ -16,8 +14,10 @@ cell heap[CELLSIZE];
 int cell_hash_table[HASHTBSIZE];
 int variant[VARIANTSIZE];
 int stack[STACKSIZE];
-int record_hash_table[HASHTBSIZE][RECORDMAX];  //for hash record database 
+int record_hash_table[HASHTBSIZE][RECORDMAX];  // for hash record database 
 int record_pt = 1;                             // current index of record database
+int counter[31];                               // counter str_set,str_dec ... 
+int string_term_buffer[STRSIZE];               // for string_term/2
 token stok = {GO,OTHER};
 jmp_buf buf;
 int variables = NIL;
@@ -51,7 +51,6 @@ int wp; //working pointer
 
 //flag
 int trace_flag = FULL;
-int trace_nest = 999999999; //max nest level of trace
 int open_flag = 0;
 int gbc_flag = 0;  // 0=not display massage 1=display message
 int simp_flag = 1;
@@ -68,7 +67,9 @@ int link_flag = 0;  // 0=not-link, 1=linked
 int listing_flag = 0;  //for print clause, 0=normal, 1=format print
 int colon_sets_calling_context_flag = 1; //1=true, 0=false
 int prefix_flag = 0;   //for parser 0=not prefix, 1=prefix
-
+int syntax_flag = YES;   //syntaxerrors/2 YES=normal. NO=ignore syntax-errors
+int string_term_flag = 0; //for string_term/2 0=normal, 1=readparse from string_term_buffer
+int ctrl_c_flag = 0;      //for ctrl_c  to stop prove
 
 //operator token
 char operator[OPERATOR_NUMBER][5] = {
@@ -91,35 +92,36 @@ char builtin[BUILTIN_NUMBER][30] = {
 {"=="},{"\\=="},{"@<"},{"@=<"},{"@>"},{"@>="},
 {"=:="},{"=/="},{"=\\="},{"<"},{"=<"},{">"},
 {">="},{"\\="},{"="},{"reverse"},
-{"is"},{"edit"},{"open"},{"close"},{"system"},{"create"},
+{"is"},{"edit"},{"open"},{"close"},{"system"},{"create"},{"dup"},
 {"delete"},{"rename"},
 {"op"},{"!"},{"assert"},{"asserta"},{"assertz"},
 {"abolish"},{"read"},{"write"},{"put"},{"get"},{"get0"},{"get0_noecho"},{"nl"},
-{"read_line"},
+{"read_line"},{"reset_op"},{"skip"},
 {"tab"},{"fail"},{"not"},{"true"},{"halt"},{"abort"},
 {"listing"},{"functor"},{"arg"},
-{"writeq"},{"display"},
+{"writeq"},{"display"},{"ref"},
 {"atom_concat"},{"consult"},{"reconsult"},
 {"see"},{"seeing"},{"seen"},{"tell"},{"telling"},{"told"},{"trace"},{"notrace"},{"spy"},
 {"nospy"},{"leash"},{"atom"},{"integer"},{"real"},{"float"},{"number"},
 {"var"},{"nonvar"},{"atomic"},{"list"},{"gc"},{"time"},{"name"},{"bounded"},
 {"flush"},{"date"},{"date_day"},
 {"string"},{"string_chars"},{"string_codes"},{"ground"},
-{"concat"},{"substring"},
-{"inc"},{"dec"},{"compare"},
+{"concat"},{"substring"},{"string_term"},{"float_text"},
+{"inc"},{"dec"},{"compare"},{"in"},{"out"},
 {"mkdir"},{"rmdir"},{"chdir"},{"string_length"},
-{"sort"},{"keysort"},{"length"},{"shell"},{"measure"},
+{"sort"},{"keysort"},{"length"},{"shell"},{"measure"},{"syntaxerrors"},
 {"ansi_cuu"},{"ansi_cud"},{"ansi_cuf"},{"ansi_cub"},
 {"ansi_cup"},{"ansi_cpr"},{"ansi_scp"},{"ansi_rcp"},
 {"ansi_ed"},{"ansi_el"},{"errorcode"},
 {"recordh"},{"recorda"},{"recordz"},{"instance"},{"removeallh"},
-{"stdin"},{"stdout"},{"stdinout"}
+{"stdin"},{"stdout"},{"stdinout"},
+{"ctr_set"},{"ctr_dec"},{"ctr_inc"},{"ctr_is"}
 };
 
 //compiled predicate
 char compiled[COMPILED_NUMBER][30] ={
 {"append"},{"member"},{"repeat"},
-{"retract"},{"clause"},{"call"},
+{"retract"},{"clause"},{"call"},{"directory"},
 {"current_visible"},{"stream_property"},{"between"},
 {"current_predicate"},{"current_op"},{"retrieveh"},{"removeh"}
 };
@@ -128,7 +130,7 @@ char compiled[COMPILED_NUMBER][30] ={
 char extended[EXTENDED_NUMBER][30] = {
 {"wiringpi_setup_gpio"},{"wiringpi_spi_setup"},{"pwm_set_mode"},
 {"pwm_set_clock"},{"pwm_set_range"},{"pin_mode"},{"digital_write"},
-{"pwm_write"},{"pull_up_dn_control"},{"digital_read"},{"delay"},
+{"pwm_write"},{"pull_up_dn_control"},{"digital_read"},{"delay"},{"delay_microseconds"},
 {"compile_file"},
 };
 
@@ -155,7 +157,7 @@ int ed_lbracket_row;
 int ed_lbracket_col;
 int ed_rbracket_row;
 int ed_rbracket_col;
-char ed_candidate[15][30];
+char ed_candidate[30][30];
 int ed_candidate_pt;
 int ed_operator_color = 3;   //default yellow
 int ed_builtin_color = 6;  //default cyan
@@ -170,7 +172,7 @@ int ed_incomment = -1; /*...*/
 int main(int argc, char *argv[]){
     int opt;
 
-    printf("N-Prolog Ver 1.0\n");
+    printf("N-Prolog Ver 1.2\n");
     signal(SIGINT,reset);
     initcell();
     initbuiltin();
@@ -208,12 +210,10 @@ int main(int argc, char *argv[]){
             b_consult(list1(makeconst(argv[opt])),NIL);
             opt++;
         }
-        #if __linux
         else if(strcmp(argv[opt],"-r") == 0){
             repl_flag = 0;
             opt++;
         }
-        #endif
         else{
             printf("Wrong option %s\n", argv[opt]);
             printf("-c consult prolog code\n");
@@ -245,8 +245,7 @@ int main(int argc, char *argv[]){
 }
 
 void reset(int i){
-    printf("ctrl+C\n");
-    longjmp(buf,1);
+    ctrl_c_flag = 1;
 }
 
 void init_repl(void){
@@ -259,6 +258,7 @@ void init_repl(void){
     unbind(0);
     sp = 0;
     cut_flag = 0;
+    ctrl_c_flag = 0;
     //initialize variant variable
     for(i=0; i<VARIANTSIZE; i++){
         variant[i] = UNBIND;
@@ -383,11 +383,15 @@ int prove_all(int goals, int bindings, int n){
 }
 
 int prove(int goal, int bindings, int rest, int n){
-    int clause,clauses,clause1,varlis,save;
+    int clause,clauses,clause1,varlis,save1,save2;
 
     proof++;
     if(n > 18000)
         error(RESOURCE_ERR,"",NIL);
+    if(ctrl_c_flag == 1){
+        printf("ctrl+C\n\n");
+        longjmp(buf,1);
+    }
 
     goal = deref(goal);
     
@@ -440,7 +444,8 @@ int prove(int goal, int bindings, int rest, int n){
             error(EXISTENCE_ERR,"", goal);
 
         while(!nullp(clauses)){
-            save = wp;
+            save1 = wp;
+            save2 = ac;
             clause = car(clauses);
             clauses = cdr(clauses);
             varlis = GET_VAR(clause);
@@ -487,7 +492,8 @@ int prove(int goal, int bindings, int rest, int n){
                 printf("(%d) REDO: ", n); print(goal);
                 debugger(goal,bindings,rest,n);
             }
-            wp = save;
+            wp = save1;
+            ac = save2;
             unbind(bindings);
         }
         //trace
@@ -498,10 +504,15 @@ int prove(int goal, int bindings, int rest, int n){
         }
     }
     else if(disjunctionp(goal)){
-        if(prove_all(addtail_body(rest,cadr(goal)),bindings,n) == YES)
+        if(ifthenp(cadr(goal))){
+            goal = wcons(IFTHENELSE,wcons(cadr(cadr(goal)),wcons(caddr(cadr(goal)),wcons(caddr(goal),NIL))));
+            // redefine goal = ifthenelse(if,then,else)
+            return(prove(goal,bindings,rest,n));
+        }
+        else if(prove_all(addtail_body(rest,cadr(goal)),bindings,n) == YES)
             return(YES);
         else{
-            if(cut_flag == 1 || car(cadr(goal)) == IFTHEN){
+            if(cut_flag == 1){
                 cut_flag = 0;
                 unbind(bindings);
                 return(NO);

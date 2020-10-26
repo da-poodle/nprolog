@@ -1,4 +1,8 @@
 #include <string.h>
+#ifdef __arm__
+#include <wiringPi.h>
+#include <wiringPiSPI.h>
+#endif
 #include "npl.h"
 
 //-----------JUMP project(builtin for compiler)------------
@@ -554,3 +558,229 @@ int b_get_execute(int arglist, int rest){
     }
     return(NO);
 }
+
+
+//----------for Raspberry PI
+#ifdef __arm__
+int b_wiringpi_setup_gpio(int arglist, int rest){
+    int n;
+
+    n = length(arglist);
+    if(n == 0){
+        wiringPiSetupGpio();
+        return(YES);
+    }
+    return(NO);
+} 
+
+int b_wiringpi_spi_setup_ch_speed(int arglist, int rest){
+    int n,arg1,arg2,x,y;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"wiringpi_spi_setup_ch_speed",arg1);
+        if(!integerp(arg2))
+            error(NOT_INT,"wiringpi_spi_setup_ch_speed",arg2);
+
+
+        x = GET_INT(arg1);
+        y = GET_INT(arg2);
+        wiringPiSPISetup(x, y);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_pwm_set_mode(int arglist, int rest){
+    int n,arg1;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+
+        if(arg1 == makeconst("pwm_mode_ms"))
+            pwmSetMode(PWM_MODE_MS);
+        else if(arg1 == makeconst("pwm_mode_bal"))
+            pwmSetMode(PWM_MODE_BAL);
+        else 
+            error(WRONG_ARGS,"pwm_set_mode",arg1);
+    
+        return(YES);
+    }
+    return(NO);    
+}
+
+int b_pwm_set_range(int arglist, int rest){
+    int n,arg1,x;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"pwm_set_range",arg1);
+
+        x = GET_INT(arg1);
+        pwmSetRange(x);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_pwm_set_clock(int arglist, int rest){
+    int n,arg1,x;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"pwm_set_clock",arg1);
+
+        x = GET_INT(arg1);
+        pwmSetClock(x);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_pin_mode(int arglist, int rest){
+    int n,arg1,arg2,x;
+
+    
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"pin_mode",arg1);
+    
+        x = GET_INT(arg1);
+        if(arg2 == makeconst("intput"))
+            pinMode(x,INPUT);
+        else if(arg2 == makeconst("output"))
+            pinMode(x,OUTPUT);
+        else if(arg2 == makeconst("pwm_output"))
+            pinMode(x,PWM_OUTPUT);
+        else
+            error(WRONG_ARGS,"pin_mode",arg2);
+    
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_digital_write(int arglist, int rest){
+    int n,arg1,arg2,x,y;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"digital_write",arg1);
+        if(!integerp(arg2))
+            error(NOT_INT,"digital_write",arg2);    
+
+        x = GET_INT(arg1);
+        y = GET_INT(arg2);
+        digitalWrite(x,y);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_digital_write_byte(int arglist, int rest){
+    int n,arg1,x;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"digital_write_byte",arg1);
+
+        x = GET_INT(arg1);
+        digitalWriteByte(x);
+        return(YES);
+    }
+    return(NO);
+} 
+
+int b_pull_up_dn_control(int arglist, int rest){
+    int n,arg1,arg2,x,y;
+
+    
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"pull_up_dn_control",arg1);
+        if(!integerp(arg2))
+            error(NOT_INT,"pull_up_dn_control",arg2);
+
+        x = GET_INT(arg1);
+        y = GET_INT(arg2);
+        pullUpDnControl(x,y);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_digital_read(int arglist, int rest){
+    int n,arg1,arg2,x,res;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"digital_read",arg1);
+
+        x = GET_INT(arg1);
+        res = digitalRead(x);
+        return(unify(arg2,makeint(res)));
+    }
+    return(NO);
+}
+
+int b_delay(int arglist, int rest){
+    int n,arg1,x;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"delay",arg1);
+
+        x = GET_INT(arg1);
+        delay(x);
+        return(YES);
+    }
+    return(NO);
+}
+
+int b_delay_microseconds(int arglist, int rest){
+    int n,arg1,x;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+        if(!integerp(arg1))
+            error(NOT_INT,"delay_microseconds",arg1);
+    
+        x = GET_INT(arg1);
+        delayMicroseconds(x);
+        return(YES);
+    }
+    return(NO);
+}
+#endif
+
+
+
+
+
+

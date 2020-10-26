@@ -1,9 +1,11 @@
+#include <stdio_ext.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/stat.h>
+#include <dirent.h>
 #include "npl.h"
 
 void initbuiltin(void){
@@ -60,18 +62,24 @@ void initbuiltin(void){
     defbuiltin("concat",b_concat);
     defbuiltin("consult",b_consult);
     defbuiltin("create",b_create);
+    defbuiltin("ctr_set",b_ctr_set);
+    defbuiltin("ctr_dec",b_ctr_dec);
+    defbuiltin("ctr_inc",b_ctr_inc);
+    defbuiltin("ctr_is",b_ctr_is);
     defbuiltin("date",b_date);
     defbuiltin("date_day",b_date_day);
     defbuiltin("dec",b_dec);
     defbuiltin("delete",b_delete);
     defbuiltin("display",b_write_canonical);
     defbuiltin("debug",b_debug);
+    defbuiltin("dup",b_dup);
     defbuiltin("edit",b_nano);
     defbuiltin("eq",b_eq);
     defbuiltin("errorcode",b_errorcode);
     defbuiltin("fail",b_fail);
     defbuiltin("flush",b_flush_output);
     defbuiltin("float",b_real);
+    defbuiltin("float_text",b_float_text);
     defbuiltin("functor",b_functor);
     defbuiltin("gc",b_gbc);
     defbuiltin("get",b_get);
@@ -81,9 +89,9 @@ void initbuiltin(void){
     defbuiltin("get_byte",b_get_byte);
     defbuiltin("ground",b_ground);
     defbuiltin("halt",b_halt);
-    defbuiltin("inc",b_inc);
     defbuiltin("ifthen",b_ifthen);
     defbuiltin("ifthenelse",b_ifthenelse);
+    defbuiltin("inc",b_inc);
     defbuiltin("instance",b_instance);
     defbuiltin("integer",b_integer);
     defbuiltin("keysort",b_keysort);
@@ -110,22 +118,27 @@ void initbuiltin(void){
     defbuiltin("recorda",b_recorda);
     defbuiltin("recordz",b_recordz);
     defbuiltin("recordh",b_recordh);
+    defbuiltin("ref",b_ref);
     defbuiltin("removeallh",b_removeallh);
     defbuiltin("rename",b_rename);
+    defbuiltin("reset_op",b_reset_op);
     defbuiltin("reverse",b_reverse);
     defbuiltin("rmdir",b_rmdir);
     defbuiltin("see",b_see);
     defbuiltin("seeing",b_seeing);
     defbuiltin("seen",b_seen);
     defbuiltin("shell",b_shell);
+    defbuiltin("skip",b_skip);
     defbuiltin("sort",b_sort);
     defbuiltin("stdin",b_stdin);
     defbuiltin("stdinout",b_stdinout);
     defbuiltin("stdout",b_stdout);
     defbuiltin("string",b_string);
     defbuiltin("string_length",b_string_length);
+    defbuiltin("string_term",b_string_term);
     defbuiltin("spy",b_spy);
     defbuiltin("substring",b_substring);
+    defbuiltin("syntaxerrors",b_syntaxerrors);
     defbuiltin("system",b_system);
     defbuiltin("tab",b_tab);
     defbuiltin("tell",b_tell);
@@ -138,7 +151,6 @@ void initbuiltin(void){
     defbuiltin("write",b_write);
     defbuiltin("writeq",b_writeq);
     
-
     defcompiled("call",b_call);
     defcompiled("repeat",b_repeat);
     defcompiled("append",b_append);
@@ -150,6 +162,7 @@ void initbuiltin(void){
     defcompiled("between",b_between);
     defcompiled("retrieveh",b_retrieveh);
     defcompiled("removeh",b_removeh);
+    defcompiled("directory",b_directory);
 
     //-----JUMP project---------
     defcompiled("n_reconsult_predicate",b_reconsult_predicate);
@@ -170,6 +183,23 @@ void initbuiltin(void){
     defbuiltin("n_defined_predicate",b_defined_predicate);
     defbuiltin("n_defined_userop",b_defined_userop);
     defbuiltin("n_get_execute",b_get_execute);
+
+     #ifdef __arm__
+    defbuiltin("wiringpi_setup_gpio",b_wiringpi_setup_gpio);
+    defbuiltin("wiringpi_spi_setup_ch_speed",b_wiringpi_spi_setup_ch_speed);
+    defbuiltin("pwm_set_mode",b_pwm_set_mode);
+    defbuiltin("pwm_set_range",b_pwm_set_range);
+    defbuiltin("pwm_set_clock",b_pwm_set_clock);
+    defbuiltin("pin_mode",b_pin_mode);
+    defbuiltin("digital_write",b_digital_write);
+    defbuiltin("digital_write_byte",b_digital_write_byte);
+    defbuiltin("pull_up_dn_control",b_pull_up_dn_control);
+    defbuiltin("digital_read",b_digital_read);
+    defbuiltin("delay",b_delay);
+    defbuiltin("delay_microseconds",b_delay_microseconds);
+    defbuiltin("out",b_digital_write);
+    defbuiltin("in",b_digital_read);
+    #endif
     return;
 }
 
@@ -205,16 +235,20 @@ int b_length(int arglist, int rest){
 
 //compiled predicate
 int b_repeat(int arglist, int rest){
-    int n,save1;
+    int n,save1,save2,save3;
 
-    save1 = sp;
+    save1 = wp;
+    save2 = sp;
+    save3 = ac;
     n = length(arglist);
     if(n == 0){
         loop:
         if(prove_all(rest,sp,0) == YES){
             return(YES);
         }
-    unbind(save1);
+    wp = save1;
+    unbind(save2);
+    ac = save3;
     goto loop;
     }
     return(NO);
@@ -798,7 +832,7 @@ int b_read(int arglist, int rest){
         
         save = input_stream;   
         input_stream = arg1;
-
+        
         temp = variable_to_call(readparse());
         res = unify(arg2,temp);
         input_stream = save;
@@ -812,10 +846,15 @@ int b_read_line(int arglist, int rest){
     char str[STRSIZE],c;
 
     n = length(arglist);
-    if(n == 2){
+    if(n == 1){
+        arg1 = input_stream;
+        arg2 = car(arglist);
+        goto read_line;
+    }
+    else if(n == 2){
         arg1 = car(arglist);
         arg2 = cadr(arglist);
-        
+        read_line:
         if(wide_variable_p(arg1))
             error(INSTANTATION_ERR,"read_line ",arg1);
         if(!streamp(arg1) && !aliasp(arg1))
@@ -837,6 +876,43 @@ int b_read_line(int arglist, int rest){
         res = unify(arg2,makeconst(str));
         input_stream = save;
         return(res);
+    }
+    return(NO);
+}
+
+
+int b_skip(int arglist, int rest){
+    int n,arg1,arg2,save;
+    char c,str[STRSIZE];
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = standard_input;
+        arg2 = car(arglist);
+        goto skip;
+    }
+    else if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        skip:
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"skip ",arg1);
+        if(!streamp(arg1) && !aliasp(arg1))
+            error(NOT_STREAM,"skip",arg1);
+        if(streamp(arg1) && GET_OPT(arg1) == OPL_OUTPUT)
+            error(NOT_INPUT_STREAM,"skip ", arg1);
+        
+        save = input_stream;   
+        input_stream = arg1;
+
+        do{
+            c = readc();
+            str[0] = c;
+            str[1] = 0;
+        }while(strcmp(str,GET_NAME(arg2)) != 0 && c != EOF);
+
+        input_stream = save;
+        return(YES);
     }
     return(NO);
 }
@@ -1015,12 +1091,34 @@ int b_open(int arglist, int rest){
                 unify(arg1,stream);
                 return(YES);
             }
-            error(NOT_OPEN_OPTION,"open ", arg2);
+            error(NOT_OPEN_OPTION,"open ", arg3);
         }
     }
     return(NO);
 }
 
+int b_dup(int arglist, int rest){
+    int n,arg1,arg2,addr;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!streamp(arg1))
+            error(NOT_STREAM,"dup ", arg1);
+        
+        addr = freshcell();
+        SET_TAG(addr,STREAM);
+        SET_PORT(addr,GET_PORT(arg1));
+        SET_CDR(addr,GET_CDR(arg1));
+        SET_OPT(addr,GET_OPT(arg1)); //input/output/inout
+        SET_VAR(addr,GET_VAR(arg1)); //text/binary
+        SET_AUX(addr,GET_AUX(arg1)); //for eof_action
+        return(unify(arg2,addr));
+    }
+    return(NO);
+}
 
 
 int b_close(int arglist, int rest){
@@ -1336,6 +1434,89 @@ void memoize_arity(int clause, int atom){
     }
 }
 
+
+int b_directory(int arglist, int rest){
+    int n,arg1,arg2,arg3,arg4,arg5,arg6,save,mode,date,time;
+    DIR *dir;
+    struct dirent *dp;
+    struct stat stat_buf;
+    struct tm *t_st;
+
+    n = length(arglist);
+    if(n == 6){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+        arg4 = cadddr(arglist);
+        arg5 = caddddr(arglist);
+        arg6 = cadddddr(arglist);
+
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"directory ",arg1);
+        if(!atomp(arg1))
+            error(NOT_ATOM,"directory ",arg1);
+        if(!wide_variable_p(arg2))
+            error(NOT_VAR,"directory ",arg2);
+        if(!wide_variable_p(arg3))
+            error(NOT_VAR,"directory ",arg3);
+        if(!wide_variable_p(arg4))
+            error(NOT_VAR,"directory ",arg4);    
+        if(!wide_variable_p(arg5))
+            error(NOT_VAR,"directory ",arg5);    
+        if(!wide_variable_p(arg6))
+            error(NOT_VAR,"directory ",arg6);    
+
+        save = sp;
+        dir = opendir(GET_NAME(arg1));
+        if(dir == NULL)
+            error(SYSTEM_ERROR,"directory ",NIL);
+
+        dp = readdir(dir);
+        while (dp != NULL) {
+            if(stat(dp->d_name,&stat_buf) == 0){
+                if(S_ISREG(stat_buf.st_mode))
+                    mode = makeconst("file");
+                else if(S_ISDIR(stat_buf.st_mode))
+                    mode = makeconst("directory");
+                else
+                    mode = makeconst("unknown"); 
+
+                t_st = localtime(&stat_buf.st_mtime);
+                date = NIL;
+                time = NIL;
+                time = cons(makeint(t_st->tm_sec),time);
+                time = cons(makeint(t_st->tm_min),time);
+                time = cons(makeint(t_st->tm_hour),time);
+                time = cons(makeconst("time"),time);
+                SET_AUX(car(time),PRED);
+                date = cons(makeint(t_st->tm_mday),date);
+                date = cons(makeint(t_st->tm_mon+1),date);
+                date = cons(makeint(t_st->tm_year+1900),date);
+                date = cons(makeconst("date"),date);
+                SET_AUX(car(date),PRED);
+                unify(arg2,makeconst(dp->d_name));
+                unify(arg3,mode);
+                unify(arg4,time);
+                unify(arg5,date);
+                unify(arg6,makeint(stat_buf.st_size));
+                if(prove_all(rest,sp,0) == YES)
+                    return(YES);
+            }
+            else
+                error(SYSTEM_ERROR,"directory ",NIL);
+
+            unbind(save);
+            dp = readdir(dir);
+        }
+        if(dir != NULL)
+            closedir(dir);
+        
+        unbind(save);
+        return(NO);
+    }
+    return(NO);
+}
+        
 
 //arithmetic operation
 
@@ -1745,6 +1926,96 @@ int b_ateqgreater(int arglist, int rest){
     return(NO);
 }
 
+//timer
+int b_ctr_set(int arglist, int rest){
+    int n,arg1,arg2;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"ctr_set ",arg1);
+        if(GET_INT(arg1) > 30)
+            error(ILLEGAL_ARGS,"str_set ",arg1);
+        if(!integerp(arg2))
+            error(NOT_INT,"ctr_set ",arg2);
+        
+        counter[GET_INT(arg1)] = GET_INT(arg2);
+        return(YES);
+
+    }
+    return(NO);
+}
+
+int b_ctr_dec(int arglist, int rest){
+    int n,arg1,arg2,i;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"ctr_dec ",arg1);
+        if(GET_INT(arg1) > 30)
+            error(ILLEGAL_ARGS,"str_set ",arg1);
+        if(!wide_variable_p(arg2))
+            error(NOT_VAR,"ctr_dec ",arg2);
+        
+        i = counter[GET_INT(arg1)];
+        counter[GET_INT(arg1)] = i-1;
+        return(unify(arg2,makeint(i)));
+
+    }
+    return(NO);
+}
+
+int b_ctr_inc(int arglist, int rest){
+    int n,arg1,arg2,i;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"ctr_dec ",arg1);
+        if(GET_INT(arg1) > 30)
+            error(ILLEGAL_ARGS,"str_set ",arg1);
+        if(!wide_variable_p(arg2))
+            error(NOT_VAR,"ctr_dec ",arg2);
+        
+        i = counter[GET_INT(arg1)];
+        counter[GET_INT(arg1)] = i+1;
+        return(unify(arg2,makeint(i)));
+
+    }
+    return(NO);
+}
+
+int b_ctr_is(int arglist, int rest){
+    int n,arg1,arg2,i;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"ctr_dec ",arg1);
+        if(GET_INT(arg1) > 30)
+            error(ILLEGAL_ARGS,"str_set ",arg1);
+        if(!wide_variable_p(arg2))
+            error(NOT_VAR,"ctr_dec ",arg2);
+        
+        i = counter[GET_INT(arg1)];
+        return(unify(arg2,makeint(i)));
+
+    }
+    return(NO);
+}
 
 //true fail
 int b_fail(int arglist, int rest){
@@ -2257,6 +2528,53 @@ int b_string_length(int arglist, int rest){
     return(NO);
 }
 
+int b_string_term(int arglist, int rest){
+    int n,arg1,arg2,l,i,res;
+    char str[STRSIZE];
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        if(wide_variable_p(arg1))
+            error(INSTANTATION_ERR,"string_term ",arg1);
+        if(!stringp(arg1))
+            error(NOT_STR,"string_term ",arg1);
+
+        l = strlen(GET_NAME(arg1));
+        memset(str,'\0',STRSIZE);
+        strcpy(str,GET_NAME(arg1));
+        for(i=0;i<l;i++)
+            string_term_buffer[i] = str[i];
+        
+        string_term_buffer[l] = '.';
+        string_term_buffer[l+1] = 0;
+        read_string_term(0); //initilize 
+        string_term_flag = 1;
+        res = readparse();
+        string_term_flag = 0;
+        return(unify(arg2,res));
+    }
+    return(NO);
+}
+
+int read_string_term(int flag){
+    static int pos=0;
+
+    if(flag == 0){
+       pos = 0;
+       return(0);
+    }
+    else if(flag == -1){
+        pos--;
+        return(-1);
+    }
+
+
+    return(string_term_buffer[pos++]);
+}
+
 int b_substring(int arglist, int rest){
     int n,arg1,arg2,arg3,arg4,i,j,k,start,len,str;
     char str1[STRSIZE],str2[STRSIZE];
@@ -2306,6 +2624,37 @@ int b_substring(int arglist, int rest){
 }
 
 
+int b_float_text(int arglist, int rest){
+    int n,arg1,arg2,arg3;
+    char str[STRSIZE];
+    double flt;
+
+    n = length(arglist);
+    if(n == 3){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+        arg3 = caddr(arglist);
+
+        if(!wide_variable_p(arg1) && !floatp(arg1))
+            error(NOT_FLT,"float_text ",arg1);
+        if(!wide_variable_p(arg2) && !stringp(arg2))
+            error(NOT_STR,"float_text ",arg2);
+        if(!stringp(arg3))
+            error(NOT_STR,"float_text ",arg3);
+
+        if(floatp(arg1)){
+            sprintf(str,GET_NAME(arg3),GET_FLT(arg1));
+            return(unify(arg2,makeconst(str)));
+        }
+        else if(stringp(arg2)){
+            flt = atof(GET_NAME(arg2));
+            return(unify(arg1,makeflt(flt)));
+        }
+        return(NO);
+    }
+    return(NO);
+}
+
 //controle
 int b_cut(int arglist, int rest){
     int n;
@@ -2345,7 +2694,7 @@ int b_ifthen(int arglist, int rest){
 }
 
 int b_ifthenelse(int arglist, int rest){
-    int n,arg1,arg2,arg3;
+    int n,arg1,arg2,arg3,save;
 
     n = length(arglist);
     if(n == 3){
@@ -2360,13 +2709,13 @@ int b_ifthenelse(int arglist, int rest){
         if(variablep(arg3))
             error(INSTANTATION_ERR,"ifthenelse ",arg3);    
 
+        save = sp;
         if(prove_all(arg1,sp,0) == YES){
-            if(prove_all(arg2,sp,0) == YES)
-                return(prove_all(rest,sp,0));
+            return(prove_all(arg2,sp,0));
         }
         else{
-            if(prove_all(arg3,sp,0) == YES)
-                return(prove_all(rest,sp,0));
+            unbind(save);
+            return(prove_all(arg3,sp,0));
         }
     }
     return(NO);
@@ -3084,6 +3433,16 @@ int b_current_op(int arglist, int rest){
     return(NO);
 }
 
+int b_reset_op(int arglist, int rest){
+    int n;
+
+    n = length(arglist);
+    if(n == 0){
+        initoperator();
+        return(YES);
+    }
+    return(NO);
+}
 
 int o_define(int x, int y){
     int clause;
@@ -3293,6 +3652,21 @@ int b_shell(int arglist, int rest){
 }
 
 
+int b_syntaxerrors(int arglist, int rest){
+    int n,arg1,arg2,res;
+
+    n = length(arglist);
+    if(n == 2){
+        arg1 = car(arglist);
+        arg2 = cadr(arglist);
+
+        res = unify(arg1,syntax_flag); 
+        syntax_flag = arg2;
+        return(res);
+    }
+    return(NO);
+}
+
 
 int b_sort(int arglist, int rest){
     int n,arg1,arg2;
@@ -3415,6 +3789,7 @@ int b_reverse(int arglist, int rest){
     }
     return(NO);
 }
+
 
 int b_between(int arglist, int rest){
     int n,arg1,arg2,arg3,save1,save2,save3,low,high;
@@ -4065,6 +4440,24 @@ int b_removeallh(int arglist, int rest){
             record_hash_table[i][record_id] = NIL;
         //as a result, removed term will be retrieve by GC
         return(YES);
+    }
+    return(NO);
+}
+
+int b_ref(int arglist, int rest){
+    int n,arg1;
+
+    n = length(arglist);
+    if(n == 1){
+        arg1 = car(arglist);
+
+        if(!integerp(arg1))
+            error(NOT_INT,"resf ",arg1);
+        
+        if(predicatep(GET_INT(arg1)))
+            return(YES);
+        else 
+            return(NO);
     }
     return(NO);
 }
